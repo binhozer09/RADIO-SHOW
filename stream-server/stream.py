@@ -37,7 +37,7 @@ def make_playlist():
         for track in tracks:
             # FFmpeg concat demuxer escaping for paths containing quotes.
             escaped = str(track).replace("\\", "\\\\").replace("'", "\\'")
-            f.write(f"file '{escaped}'\\n")
+            f.write(f"file '{escaped}'\n")
     return len(tracks)
 
 while True:
