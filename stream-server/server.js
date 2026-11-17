@@ -6,7 +6,7 @@ const path = require("node:path");
 
 const PORT = Number(process.env.PORT || 8000);
 const API_KEY = process.env.YOUTUBE_API_KEY || "";
-const CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID || "UCcYfAB9N908fAKaVFEFxxQA";
+const CHANNEL_HANDLE = (process.env.YOUTUBE_CHANNEL_HANDLE || "RobinhoShowOficial").replace(/^@/, "");
 const MAX_DURATION_SECONDS = Math.min(300, Math.max(1, Number(process.env.MAX_DURATION_SECONDS || 300)));
 const STATE_FILE = process.env.STATE_FILE || "/music/schedule.json";
 const REFRESH_MS = 15 * 60 * 1000;
@@ -44,7 +44,11 @@ async function youtube(url) {
 
 async function fetchEligibleVideos() {
   if (!API_KEY) throw new Error("YOUTUBE_API_KEY não configurada no Railway.");
-  const uploadsId = "UU" + CHANNEL_ID.replace(/^UC/, "");
+  const channelUrl = new URL("https://www.googleapis.com/youtube/v3/channels");
+  channelUrl.search = new URLSearchParams({ part: "contentDetails", forHandle: CHANNEL_HANDLE, key: API_KEY });
+  const channel = await youtube(channelUrl);
+  const uploadsId = channel.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+  if (!uploadsId) throw new Error("Não foi possível localizar a playlist de envios do canal @" + CHANNEL_HANDLE + ".");
   const playlistUrl = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
   playlistUrl.search = new URLSearchParams({
     part: "contentDetails,snippet",
@@ -117,6 +121,11 @@ async function refreshSchedule(force = false) {
   })().catch(error => {
     lastError = error.message;
     console.error("Falha ao atualizar catálogo do YouTube:", error.message);
+    if (schedule) {
+      lastRefresh = Date.now();
+      console.warn("Usando o último catálogo persistido até a próxima tentativa.");
+      return schedule;
+    }
     throw error;
   }).finally(() => { refreshPromise = null; });
   return refreshPromise;
