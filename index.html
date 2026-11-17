@@ -20,7 +20,7 @@
     .status{min-height:24px;color:#d7c7e8;font-size:.92rem;margin:0 0 24px}
     .controls{display:flex;justify-content:center;gap:14px}.control{border:0;border-radius:999px;padding:16px 30px;min-width:132px;font-weight:800;letter-spacing:.12em;font-size:1rem;cursor:pointer}
     #play{background:linear-gradient(135deg,#d9a6ff,#9747e8);color:#190c28;box-shadow:0 8px 28px #a34dff55}#pause{background:#2b203a;color:#eee;border:1px solid #61477c}
-    .player{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.channel{display:inline-block;margin-top:30px;color:#bca4d8;font-size:.85rem;text-decoration:none}
+    .player-wrap{width:min(100%,360px);margin:24px auto 0}.player{width:100%;min-height:200px;aspect-ratio:16/9;border:1px solid #61477c;border-radius:14px;overflow:hidden;background:#08060d}.player iframe{width:100%;height:100%;min-height:200px}.channel{display:inline-block;margin-top:22px;color:#bca4d8;font-size:.85rem;text-decoration:none}
     .note{font-size:.74rem;line-height:1.5;color:#8f7da7;margin:22px auto 0;max-width:330px}
     button:focus-visible,a:focus-visible{outline:3px solid #e4c4ff;outline-offset:4px}
   </style>
@@ -35,9 +35,9 @@
     <button class="control" id="play" type="button">▶ PLAY</button>
     <button class="control" id="pause" type="button">Ⅱ PAUSE</button>
   </div>
+  <div class="player-wrap"><div class="player" id="player"></div></div>
   <a class="channel" href="https://www.youtube.com/@RobinhoShowOficial" target="_blank" rel="noopener">Canal oficial de Robinho Show ↗</a>
   <p class="note">A reprodução usa o player oficial do YouTube. Para ativar a sequência automática, é necessário configurar uma playlist pública com as músicas de até 5 minutos.</p>
-  <div class="player" id="player" aria-hidden="true"></div>
 </main>
 <script>
   // Configure YOUTUBE_PLAYLIST_ID após criar/selecionar a playlist oficial.
@@ -64,8 +64,8 @@
       return;
     }
     player = new YT.Player("player", {
-      height: "1", width: "1",
-      playerVars: { listType: "playlist", list: YOUTUBE_PLAYLIST_ID, playsinline: 1, rel: 0 },
+      height: "203", width: "360",
+      playerVars: { listType: "playlist", list: YOUTUBE_PLAYLIST_ID, playsinline: 1, rel: 0, origin: window.location.origin },
       events: { onReady: () => { statusEl.textContent = "Pronto para tocar"; }, onStateChange: e => setPlaying(e.data === YT.PlayerState.PLAYING) }
     });
   };
