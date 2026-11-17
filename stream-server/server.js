@@ -34,26 +34,45 @@ function send(res, status, body) {
 }
 
 async function fetchVideoMetadata(videoId) {
-  const response = await fetch("https://www.youtube.com/watch?v=" + encodeURIComponent(videoId) + "&hl=pt-BR", {
-    headers: { "user-agent": "Mozilla/5.0 (compatible; RadioShow/1.0)", "accept-language": "pt-BR,pt;q=0.9,en;q=0.8" },
-    signal: AbortSignal.timeout(15000)
-  });
-  if (!response.ok) throw new Error("YouTube retornou HTTP " + response.status + " para " + videoId);
-  const html = await response.text();
-  const durationMatch = html.match(/"lengthSeconds"\s*:\s*"?(\d+)"?/);
-  if (!durationMatch) throw new Error("Não foi possível ler a duração do vídeo " + videoId + " na página do YouTube.");
-  const durationSeconds = Number(durationMatch[1]);
-  if (!Number.isFinite(durationSeconds) || durationSeconds < 1 || durationSeconds > MAX_DURATION_SECONDS) {
-    throw new Error("O vídeo " + videoId + " não atende ao limite de " + MAX_DURATION_SECONDS + " segundos.");
+  let lastFailure = null;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      const response = await fetch("https://www.youtube.com/watch?v=" + encodeURIComponent(videoId) + "&hl=pt-BR", {
+        headers: { "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126.0.0.0 Safari/537.36", "accept-language": "pt-BR,pt;q=0.9,en;q=0.8" },
+        signal: AbortSignal.timeout(20000)
+      });
+      if (response.status === 429 || response.status === 503) {
+        lastFailure = new Error("YouTube retornou HTTP " + response.status + " para " + videoId);
+        await new Promise(resolve => setTimeout(resolve, 2500 * (attempt + 1)));
+        continue;
+      }
+      if (!response.ok) throw new Error("YouTube retornou HTTP " + response.status + " para " + videoId);
+      const html = await response.text();
+      const durationMatch = html.match(/"lengthSeconds"\s*:\s*"?(\\d+)"?/);
+      if (!durationMatch) throw new Error("Não foi possível ler a duração do vídeo " + videoId + " na página do YouTube.");
+      const durationSeconds = Number(durationMatch[1]);
+      if (!Number.isFinite(durationSeconds) || durationSeconds < 1 || durationSeconds > MAX_DURATION_SECONDS) {
+        throw new Error("O vídeo " + videoId + " não atende ao limite de " + MAX_DURATION_SECONDS + " segundos.");
+      }
+      const titleMatch = html.match(/<meta\s+name="title"\s+content="([^"]*)"/i) || html.match(/<title>([^<]*)<\/title>/i);
+      const title = titleMatch ? titleMatch[1].replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"') : "Robinho Show";
+      return { videoId, title, durationSeconds };
+    } catch (error) {
+      lastFailure = error;
+      if (attempt < 3) await new Promise(resolve => setTimeout(resolve, 1500 * (attempt + 1)));
+    }
   }
-  const titleMatch = html.match(/<meta\s+name="title"\s+content="([^"]*)"/i) || html.match(/<title>([^<]*)<\/title>/i);
-  const title = titleMatch ? titleMatch[1].replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"') : "Robinho Show";
-  return { videoId, title, durationSeconds };
+  throw lastFailure || new Error("Não foi possível consultar " + videoId);
 }
 
 async function fetchFixedPlaylist() {
-  // Só consulta metadados públicos das cinco páginas; nenhum áudio/vídeo é baixado.
-  return Promise.all(VIDEO_IDS.map(fetchVideoMetadata));
+  // Consulta sequencial e com tentativas para evitar bloqueio por muitas requisições; não baixa mídia.
+  const videos = [];
+  for (const videoId of VIDEO_IDS) {
+    videos.push(await fetchVideoMetadata(videoId));
+    await new Promise(resolve => setTimeout(resolve, 1200));
+  }
+  return videos;
 }
 
 function saveState() {
