@@ -5,40 +5,39 @@ import android.os.Bundle;
 import android.view.View;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebResourceResponse;
-import androidx.webkit.WebViewAssetLoader;
-import androidx.webkit.WebViewClientCompat;
+import android.webkit.WebViewClient;
+import android.graphics.Color;
 
 public class MainActivity extends Activity {
+    private static final String SERVER_URL = "https://radio-show-stream-production.up.railway.app/";
     private WebView webView;
-    @Override public void onCreate(Bundle state) {
+
+    @Override
+    public void onCreate(Bundle state) {
         super.onCreate(state);
-        getWindow().setStatusBarColor(android.graphics.Color.rgb(16,11,32));
-        getWindow().setNavigationBarColor(android.graphics.Color.rgb(11,8,18));
+        getWindow().setStatusBarColor(Color.rgb(9, 9, 15));
+        getWindow().setNavigationBarColor(Color.rgb(9, 9, 15));
         webView = new WebView(this);
-        webView.setBackgroundColor(android.graphics.Color.rgb(16,11,32));
-        WebSettings s = webView.getSettings();
-        s.setJavaScriptEnabled(true);
-        s.setDomStorageEnabled(true);
-        s.setMediaPlaybackRequiresUserGesture(false);
-        s.setLoadWithOverviewMode(true);
-        s.setUseWideViewPort(true);
-        s.setAllowFileAccess(false);
-        s.setAllowContentAccess(false);
-        WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
-            .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
-            .build();
-        webView.setWebViewClient(new WebViewClientCompat() {
-            @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                return loader.shouldInterceptRequest(request.getUrl());
-            }
-        });
+        webView.setBackgroundColor(Color.rgb(9, 9, 15));
+        WebSettings settings = webView.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        settings.setDatabaseEnabled(true);
+        settings.setMediaPlaybackRequiresUserGesture(true);
+        settings.setLoadWithOverviewMode(true);
+        settings.setUseWideViewPort(true);
+        settings.setSupportZoom(false);
+        settings.setBuiltInZoomControls(false);
+        settings.setAllowFileAccess(false);
+        settings.setAllowContentAccess(false);
         webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        webView.setWebViewClient(new WebViewClient());
         setContentView(webView);
-        webView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
+        webView.loadUrl(SERVER_URL);
     }
-    @Override public void onBackPressed() {
+
+    @Override
+    public void onBackPressed() {
         if (webView != null && webView.canGoBack()) webView.goBack();
         else super.onBackPressed();
     }
