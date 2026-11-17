@@ -12,5 +12,4 @@ COPY stream.py /opt/radio/stream.py
 RUN chmod +x /opt/radio/start.sh && mkdir -p /music
 
 EXPOSE 8000
-VOLUME ["/music"]
 CMD ["/opt/radio/start.sh"]
