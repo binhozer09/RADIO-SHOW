@@ -6,58 +6,53 @@ from urllib.parse import quote
 
 MUSIC_DIR = Path(os.getenv("MUSIC_DIR", "/music"))
 PLAYLIST = Path("/tmp/radio-playlist.txt")
-SOURCE_PASSWORD = quote(os.environ["ICECAST_SOURCE_PASSWORD"], safe="")
+PASSWORD = quote(os.environ["ICECAST_SOURCE_PASSWORD"], safe="")
 BITRATE = os.getenv("AUDIO_BITRATE", "128k")
-PORT = os.getenv("PORT", "8000")
-TARGET = f"icecast://source:{SOURCE_PASSWORD}@127.0.0.1:{PORT}/radio.mp3"
+TARGET = f"icecast://source:{PASSWORD}@127.0.0.1:8000/radio.mp3"
 EXTENSIONS = {".mp3", ".m4a", ".aac", ".wav", ".ogg", ".flac"}
 
-def make_playlist():
-    candidates = sorted(
-        p for p in MUSIC_DIR.rglob("*")
-        if p.is_file() and p.suffix.lower() in EXTENSIONS
-    )
-    tracks = []
-    for candidate in candidates:
-        probe = subprocess.run(
+def duration_seconds(path):
+    try:
+        result = subprocess.run(
             ["ffprobe", "-v", "error", "-show_entries", "format=duration",
-             "-of", "default=noprint_wrappers=1:nokey=1", str(candidate)],
-            capture_output=True, text=True, check=False
+             "-of", "default=noprint_wrappers=1:nokey=1", str(path)],
+            capture_output=True, text=True, timeout=20, check=True
         )
-        try:
-            duration = float(probe.stdout.strip())
-        except (TypeError, ValueError):
-            continue
-        if 0 < duration <= 300:
-            tracks.append(candidate)
-
-    if not tracks:
-        return 0
-    with PLAYLIST.open("w", encoding="utf-8") as f:
-        for track in tracks:
-            # FFmpeg concat demuxer escaping for paths containing quotes.
-            escaped = str(track).replace("\\", "\\\\").replace("'", "\\'")
-            f.write(f"file '{escaped}'\n")
-    return len(tracks)
+        return float(result.stdout.strip())
+    except Exception as exc:
+        print(f"Não foi possível ler duração de {path.name}: {exc}", flush=True)
+        return None
 
 while True:
-    count = make_playlist()
-    if not count:
-        print(f"No audio files found in {MUSIC_DIR}; checking again in 60 seconds.", flush=True)
+    candidates = sorted(p for p in MUSIC_DIR.rglob("*") if p.is_file() and p.suffix.lower() in EXTENSIONS)
+    tracks = []
+    for path in candidates:
+        duration = duration_seconds(path)
+        if duration is not None and 0 < duration <= 300:
+            tracks.append(path)
+        elif duration is not None:
+            print(f"Ignorando {path.name}: duração acima de 5 minutos.", flush=True)
+
+    if not tracks:
+        print(f"Nenhuma faixa válida (até 5 minutos) em {MUSIC_DIR}; nova verificação em 60 segundos.", flush=True)
         time.sleep(60)
         continue
 
-    print(f"Starting RADIO SHOW stream with {count} audio files.", flush=True)
+    with PLAYLIST.open("w", encoding="utf-8") as f:
+        for track in tracks:
+            escaped = str(track).replace("\\", "\\\\").replace("'", "\\'")
+            f.write(f"file '{escaped}'\n")
+
+    print(f"Transmitindo RADIO SHOW: {len(tracks)} faixas de até 5 minutos em repetição.", flush=True)
     command = [
-        "ffmpeg", "-hide_banner", "-loglevel", "warning",
-        "-re", "-stream_loop", "-1", "-f", "concat", "-safe", "0",
+        "ffmpeg", "-hide_banner", "-loglevel", "warning", "-re",
+        "-stream_loop", "-1", "-f", "concat", "-safe", "0",
         "-i", str(PLAYLIST), "-vn", "-c:a", "libmp3lame",
-        "-b:a", BITRATE, "-content_type", "audio/mpeg",
-        "-f", "mp3", TARGET
+        "-b:a", BITRATE, "-content_type", "audio/mpeg", "-f", "mp3", TARGET
     ]
     try:
         result = subprocess.run(command, check=False)
-        print(f"Encoder stopped with code {result.returncode}; restarting in 5 seconds.", flush=True)
+        print(f"Codificador encerrou ({result.returncode}); reiniciando em 5 segundos.", flush=True)
     except Exception as exc:
-        print(f"Encoder error: {exc}; restarting in 5 seconds.", flush=True)
+        print(f"Erro no codificador: {exc}; reiniciando em 5 segundos.", flush=True)
     time.sleep(5)
