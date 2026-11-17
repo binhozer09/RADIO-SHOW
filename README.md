@@ -1,23 +1,31 @@
 # RADIO SHOW
 
-Aplicativo web instalável (PWA) para a rádio de Robinho Show.
+Aplicativo Android/PWA para ouvir a transmissão independente da RADIO SHOW.
 
-## Estado atual
-- Interface inicial com PLAY e PAUSE.
-- Identidade visual RADIO SHOW.
-- Manifesto PWA e cache básico para abrir a interface quando offline.
-- Player oficial do YouTube integrado e exibido na tela (com área visível, sem ocultar o player).
-- Service worker `sw.js` para cache básico da interface.
+## Arquitetura da rádio na nuvem
 
-## Falta configurar a playlist
-No arquivo `index.html`, preencha `YOUTUBE_PLAYLIST_ID` com o ID de uma playlist pública do canal oficial contendo somente vídeos de até 5 minutos. O campo continua vazio até validar a lista e as durações.
+O repositório agora inclui um servidor Icecast + FFmpeg em `stream-server/`. Ele executa uma playlist de arquivos de áudio em loop no servidor, sem depender do celular do proprietário nem de um player do YouTube.
 
-Canal: https://www.youtube.com/@RobinhoShowOficial
+- Endpoint de áudio: `/radio.mp3`
+- Página de estado: `/status-json.xsl`
+- Pasta persistente de músicas no servidor: `/music`
+- Formatos aceitos: MP3, M4A, AAC, WAV, OGG e FLAC.
+- O codificador reinicia automaticamente se o processo de transmissão cair.
+- A playlist é repetida continuamente enquanto houver faixas na pasta.
 
-A playlist deve ser revisada para excluir vídeos acima de 5 minutos. O app ainda não possui uma lista de faixas validada; não inventamos IDs nem durações.
+## O que falta para entrar no ar
 
-## Limite importante
-O player oficial do YouTube toca no dispositivo de cada ouvinte. Hospedar o site na nuvem mantém o aplicativo disponível, mas não transforma o YouTube em uma transmissão de áudio centralizada 24 horas. A reprodução pode parar se o app for fechado, se o sistema suspender o navegador ou conforme as regras/autoplay do YouTube. Para rádio 24/7 realmente transmitida pela nuvem, é necessário ter arquivos de áudio autorizados e um serviço de streaming próprio/licenciado.
+1. Conectar uma hospedagem de contêiner sempre ativa (o projeto está preparado para Railway).
+2. Criar um volume persistente montado em `/music`.
+3. Configurar as variáveis secretas `ICECAST_SOURCE_PASSWORD` e `ICECAST_ADMIN_PASSWORD`. Não coloque senhas no GitHub.
+4. Enviar para `/music` arquivos de áudio que você tenha direito de transmitir.
+5. Gerar o domínio HTTPS público do serviço e preencher `streamUrl` em `radio-config.json` com o endereço completo terminado em `/radio.mp3`.
+6. Copiar o mesmo `radio-config.json` para `app/src/main/assets/radio-config.json` antes de compilar o APK.
 
-## Publicação
-Pode ser hospedado como site estático (por exemplo, GitHub Pages ou Vercel). HTTPS é necessário para instalação PWA e service worker.
+**Importante:** o servidor não extrai nem retransmite vídeos do YouTube. É necessário usar arquivos de áudio próprios ou licenciados para retransmissão. O serviço de nuvem precisa permanecer ativo e pode ter custo conforme o provedor e o tráfego. O ouvinte ainda precisa de internet e de um dispositivo ligado para escutar.
+
+## Desenvolvimento local
+
+Para testar o servidor com Docker Compose, crie um arquivo `.env` local com as senhas (não o envie ao GitHub), monte sua pasta de músicas em `/music` e execute `docker compose up --build`.
+
+O app usa `radio-config.json` para saber qual URL de streaming reproduzir. Com `streamUrl` vazio, os botões mostram que a transmissão ainda não foi ativada.
