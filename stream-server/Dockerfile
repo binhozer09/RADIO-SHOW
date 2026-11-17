@@ -7,5 +7,6 @@ COPY package.json ./
 RUN npm install --omit=dev
 COPY server.js ./
 COPY cloud-player.html ./
+COPY remote.html ./
 EXPOSE 8000
 CMD ["npm", "start"]
