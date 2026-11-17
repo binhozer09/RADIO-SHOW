@@ -48,7 +48,7 @@ async function fetchVideoMetadata(videoId) {
       }
       if (!response.ok) throw new Error("YouTube retornou HTTP " + response.status + " para " + videoId);
       const html = await response.text();
-      const durationMatch = html.match(/"lengthSeconds"\s*:\s*"?(\\d+)"?/);
+      const durationMatch = html.match(/"lengthSeconds"\s*:\s*"?(\d+)"?/);
       if (!durationMatch) throw new Error("Não foi possível ler a duração do vídeo " + videoId + " na página do YouTube.");
       const durationSeconds = Number(durationMatch[1]);
       if (!Number.isFinite(durationSeconds) || durationSeconds < 1 || durationSeconds > MAX_DURATION_SECONDS) {
