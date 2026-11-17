@@ -1,16 +1,8 @@
 {
-  "name": "radio-show-youtube-cloud-player",
-  "version": "1.1.0",
+  "name": "radio-show-linux-remote",
+  "version": "2.0.0",
   "private": true,
-  "description": "Player oficial do YouTube executado continuamente no Railway para RADIO SHOW",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "puppeteer-core": "24.31.0",
-    "http-proxy": "^1.18.1"
-  },
-  "engines": {
-    "node": ">=20"
-  }
+  "description": "Desktop Linux remoto com terminal Bash para o app Android",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=20" }
 }
