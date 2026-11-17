@@ -8,7 +8,8 @@ MUSIC_DIR = Path(os.getenv("MUSIC_DIR", "/music"))
 PLAYLIST = Path("/tmp/radio-playlist.txt")
 SOURCE_PASSWORD = quote(os.environ["ICECAST_SOURCE_PASSWORD"], safe="")
 BITRATE = os.getenv("AUDIO_BITRATE", "128k")
-TARGET = f"icecast://source:{SOURCE_PASSWORD}@127.0.0.1:8000/radio.mp3"
+PORT = os.getenv("PORT", "8000")
+TARGET = f"icecast://source:{SOURCE_PASSWORD}@127.0.0.1:{PORT}/radio.mp3"
 EXTENSIONS = {".mp3", ".m4a", ".aac", ".wav", ".ogg", ".flac"}
 
 def make_playlist():
