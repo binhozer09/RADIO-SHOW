@@ -59,8 +59,7 @@ async function syncRadio(){
     const response=await fetch(API_URL,{cache:"no-store"});
     const data=await response.json();
     if(!response.ok){
-      if(data.setupRequired)throw new Error("Falta configurar a chave da YouTube Data API no Railway (YOUTUBE_API_KEY).");
-      throw new Error(data.detail||data.error||"Servidor de programação indisponível.");
+        throw new Error(data.detail||data.error||"Servidor de programação indisponível.");
     }
     latest=data;
     trackEl.textContent=data.title||"Robinho Show";
