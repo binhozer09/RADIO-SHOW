@@ -11,6 +11,7 @@ O repositório agora inclui um servidor Icecast + FFmpeg em `stream-server/`. El
 - Pasta persistente de músicas no servidor: `/music`
 - Formatos aceitos: MP3, M4A, AAC, WAV, OGG e FLAC.
 - O codificador reinicia automaticamente se o processo de transmissão cair.
+- O servidor inclui somente faixas com duração de até 5 minutos; arquivos maiores são ignorados.
 - A playlist é repetida continuamente enquanto houver faixas na pasta.
 
 ## O que falta para entrar no ar
