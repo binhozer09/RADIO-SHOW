@@ -6,10 +6,11 @@ Aplicativo web instalável (PWA) para a rádio de Robinho Show.
 - Interface inicial com PLAY e PAUSE.
 - Identidade visual RADIO SHOW.
 - Manifesto PWA e cache básico para abrir a interface quando offline.
-- Integração preparada para o player oficial do YouTube.
+- Player oficial do YouTube integrado e exibido na tela (com área visível, sem ocultar o player).
+- Service worker `sw.js` para cache básico da interface.
 
 ## Falta configurar a playlist
-No arquivo `index.html`, preencha `YOUTUBE_PLAYLIST_ID` com o ID de uma playlist pública do canal oficial contendo somente vídeos de até 5 minutos.
+No arquivo `index.html`, preencha `YOUTUBE_PLAYLIST_ID` com o ID de uma playlist pública do canal oficial contendo somente vídeos de até 5 minutos. O campo continua vazio até validar a lista e as durações.
 
 Canal: https://www.youtube.com/@RobinhoShowOficial
 
