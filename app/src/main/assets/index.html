@@ -2,93 +2,50 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#100b20"><meta name="description" content="RADIO SHOW — cinco vídeos do Robinho Show em sequência pelo player oficial do YouTube.">
-<title>RADIO SHOW</title>
+<meta name="theme-color" content="#100b20"><title>RADIO SHOW</title>
 <style>
 *{box-sizing:border-box}body{margin:0;min-height:100svh;background:radial-gradient(ellipse at 50% 10%,#38205e,#171025 55%,#0b0812);color:#fff;font-family:system-ui,-apple-system,Segoe UI,sans-serif;display:grid;place-items:center;padding:20px}
-main{width:min(100%,720px);text-align:center}.brand{font-size:clamp(2.4rem,10vw,4.4rem);font-weight:900;letter-spacing:.12em;margin:0;text-shadow:0 0 28px #b56aff66}.sub{color:#c9b8df;letter-spacing:.16em;text-transform:uppercase;font-size:.78rem;margin:8px 0 26px}
-.live{display:inline-flex;align-items:center;gap:8px;background:#123c2c;color:#a9ffd0;border:1px solid #267a51;border-radius:99px;padding:7px 14px;font-size:.75rem;font-weight:800;letter-spacing:.12em;margin-bottom:14px}.dot{width:8px;height:8px;border-radius:50%;background:#39e58c;box-shadow:0 0 10px #39e58c}
-.player{width:100%;aspect-ratio:16/9;background:#08060d;border:1px solid #62477d;border-radius:18px;overflow:hidden;box-shadow:0 18px 60px #0008}.player iframe{width:100%;height:100%;border:0}
-.status{color:#d7c7e8;min-height:24px;font-size:.9rem;margin:16px 0}.track{font-weight:700;min-height:22px;margin:4px 0 12px}.meta{font-size:.75rem;color:#a995bd;margin:0 0 16px}
-.actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}button{border:0;border-radius:99px;padding:13px 22px;font-weight:800;cursor:pointer;background:linear-gradient(135deg,#d9a6ff,#9747e8);color:#190c28}a{color:#d9a6ff;text-decoration:none;font-size:.88rem;padding:13px}.note{font-size:.75rem;line-height:1.5;color:#9d8caf;max-width:580px;margin:18px auto 0}
+main{width:min(100%,680px);text-align:center}.brand{font-size:clamp(2.4rem,10vw,4.4rem);font-weight:900;letter-spacing:.12em;margin:0;text-shadow:0 0 28px #b56aff66}.sub{color:#c9b8df;letter-spacing:.16em;text-transform:uppercase;font-size:.78rem;margin:8px 0 26px}
+.live{display:inline-flex;align-items:center;gap:8px;background:#123c2c;color:#a9ffd0;border:1px solid #267a51;border-radius:99px;padding:7px 14px;font-size:.75rem;font-weight:800;letter-spacing:.12em;margin-bottom:20px}.dot{width:8px;height:8px;border-radius:50%;background:#39e58c;box-shadow:0 0 10px #39e58c}
+.disc{width:220px;height:220px;margin:8px auto 24px;border-radius:50%;background:radial-gradient(circle,#171025 0 12%,#a76ae8 13% 15%,#211432 16% 35%,#09070d 36% 60%,#4d3764 61% 63%,#100b20 64%);box-shadow:0 0 55px #a76ae855;animation:spin 7s linear infinite;animation-play-state:paused}.disc.playing{animation-play-state:running}@keyframes spin{to{transform:rotate(360deg)}}
+.status{color:#d7c7e8;min-height:24px;font-size:.9rem;margin:16px 0}.track{font-weight:700;min-height:22px;margin:4px 0 12px}.meta{font-size:.75rem;color:#a995bd;margin:0 0 16px}.note{font-size:.75rem;line-height:1.5;color:#9d8caf;max-width:580px;margin:18px auto 0}
+audio{width:100%;max-width:420px;opacity:.01;height:1px;position:absolute;pointer-events:none}
 </style></head>
 <body><main>
-<h1 class="brand">RADIO SHOW</h1><p class="sub">Robinho Show • sequência automática</p>
-<div class="live"><span class="dot"></span> SERVIDOR ONLINE</div>
-<div class="player"><div id="player"></div></div>
-<p class="track" id="track">Carregando a lista da rádio…</p>
-<p class="status" id="status" role="status" aria-live="polite">Conectando ao servidor na nuvem.</p>
-<p class="meta" id="meta">Cinco vídeos na ordem escolhida • repetição automática</p>
-<div class="actions"><button id="listen" type="button">▶ OUVIR AGORA</button><button id="reload" type="button">↻ RECARREGAR LISTA</button><a href="https://www.youtube.com/@robinhoshowoficial" target="_blank" rel="noopener">Canal oficial ↗</a></div>
-<p class="note">Os vídeos são reproduzidos diretamente pelo player oficial do YouTube, sem baixar ou salvar músicas. O servidor da rádio fica online na nuvem 24 horas. A reprodução de áudio acontece no aparelho de quem abrir o app; se ninguém estiver ouvindo, o servidor continua online, mas não existe reprodução de áudio acontecendo na nuvem. O YouTube pode exigir o primeiro toque para iniciar.</p>
+<h1 class="brand">RADIO SHOW</h1><p class="sub">Robinho Show • transmissão contínua</p>
+<div class="live"><span class="dot"></span> SERVIDOR DA RÁDIO</div>
+<div class="disc" id="disc" aria-label="RADIO SHOW"></div>
+<p class="track" id="track">Conectando à transmissão…</p>
+<p class="status" id="status" role="status" aria-live="polite">Abrindo o sinal de áudio da rádio.</p>
+<p class="meta">Transmissão hospedada no Railway • reprodução automática</p>
+<audio id="radio" autoplay playsinline preload="none"></audio>
+<p class="note">A transmissão será iniciada automaticamente quando houver uma fonte de áudio autorizada configurada no servidor. Os cinco vídeos do YouTube ficam como referência da programação; não extraímos nem retransmitimos o áudio deles.</p>
 </main>
 <script>
 const API_BASE="https://radio-show-stream-production.up.railway.app";
-const statusEl=document.getElementById("status");
-const trackEl=document.getElementById("track");
-const metaEl=document.getElementById("meta");
-let player=null,playerReady=false,playlist=[],currentIndex=0,started=false;
-
-function setStatus(message){statusEl.textContent=message;}
-function showTrack(){
-  if(!playlist.length)return;
-  trackEl.textContent="Robinho Show • vídeo "+(currentIndex+1)+" de "+playlist.length;
+const audio=document.getElementById("radio"),statusEl=document.getElementById("status"),trackEl=document.getElementById("track"),disc=document.getElementById("disc");
+async function startRadio(){
+ try{
+  const response=await fetch(API_BASE+"/health",{cache:"no-store"});
+  const health=await response.json();
+  if(!health.streamConfigured){
+   trackEl.textContent="Aguardando fonte de áudio";
+   statusEl.textContent="A estrutura da transmissão está pronta, mas falta configurar uma URL de streaming autorizada no servidor.";
+   return;
+  }
+  audio.src=API_BASE+"/stream";
+  audio.load();
+  const result=audio.play();
+  if(result&&typeof result.then==="function")await result;
+  trackEl.textContent="RADIO SHOW • AO VIVO";
+  statusEl.textContent="Conectado à transmissão contínua.";
+ }catch(error){
+  trackEl.textContent="Transmissão indisponível";
+  statusEl.textContent="O aparelho ou a fonte de áudio não permitiu iniciar automaticamente: "+error.message;
+ }
 }
-function playCurrent(){
-  if(!playerReady||!player||!playlist.length)return;
-  const id=playlist[currentIndex];
-  showTrack();
-  player.loadVideoById({videoId:id});
-  started=true;
-  setStatus("Reproduzindo pelo YouTube.");
-}
-async function loadPlaylist(){
-  try{
-    setStatus("Conectando ao servidor na nuvem…");
-    const [healthResponse,listResponse]=await Promise.all([
-      fetch(API_BASE+"/health",{cache:"no-store"}),
-      fetch(API_BASE+"/api/playlist",{cache:"no-store"})
-    ]);
-    if(!healthResponse.ok||!listResponse.ok)throw new Error("Servidor da rádio indisponível.");
-    const listData=await listResponse.json();
-    playlist=(listData.playlist||[]).map(item=>typeof item==="string"?item:item.videoId).filter(Boolean);
-    if(!playlist.length)throw new Error("A lista da rádio está vazia.");
-    currentIndex=0;
-    metaEl.textContent=playlist.length+" vídeos • ordem fixa • repetição automática";
-    showTrack();
-    setStatus("Servidor online. Tentando iniciar a reprodução automaticamente…");
-    if(playerReady)playCurrent();
-  }catch(error){setStatus(error.message);trackEl.textContent="Não foi possível carregar a rádio.";}
-}
-function onYouTubeIframeAPIReady(){
-  player=new YT.Player("player",{
-    width:"100%",height:"100%",
-    playerVars:{autoplay:1,controls:1,rel:0,playsinline:1,enablejsapi:1,origin:location.origin},
-    events:{
-      onReady:function(){playerReady=true;if(!playlist.length)loadPlaylist();else playCurrent();},
-      onStateChange:function(event){
-        if(event.data===YT.PlayerState.PLAYING)setStatus("Tocando • sequência automática ativa.");
-        else if(event.data===YT.PlayerState.PAUSED)setStatus("Pausado. Toque em OUVIR AGORA para continuar.");
-        else if(event.data===YT.PlayerState.ENDED){
-          currentIndex=(currentIndex+1)%playlist.length;
-          playCurrent();
-        }
-      },
-      onError:function(event){
-        setStatus("O YouTube não permitiu este vídeo (código "+event.data+"). Pulando para o próximo.");
-        if(playlist.length){currentIndex=(currentIndex+1)%playlist.length;setTimeout(playCurrent,1200);}
-      }
-    }
-  });
-}
-window.onYouTubeIframeAPIReady=onYouTubeIframeAPIReady;
-document.getElementById("listen").addEventListener("click",function(){
-  if(!playerReady){setStatus("Aguarde o player do YouTube carregar.");return;}
-  if(started&&player){player.playVideo();}else playCurrent();
-});
-document.getElementById("reload").addEventListener("click",loadPlaylist);
-const tag=document.createElement("script");
-tag.src="https://www.youtube.com/iframe_api";
-document.head.appendChild(tag);
-loadPlaylist();
+audio.addEventListener("playing",()=>{disc.classList.add("playing");trackEl.textContent="RADIO SHOW • AO VIVO";statusEl.textContent="Você está ouvindo a transmissão da rádio.";});
+audio.addEventListener("waiting",()=>statusEl.textContent="Conectando ao sinal de áudio…");
+audio.addEventListener("error",()=>{disc.classList.remove("playing");statusEl.textContent="Não foi possível receber o sinal. Verifique a fonte de áudio no servidor.";});
+startRadio();
 </script></body></html>
