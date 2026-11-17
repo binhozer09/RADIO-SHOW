@@ -8,7 +8,7 @@ set -eu
 : "${PORT:=8000}"
 
 export ICECAST_RELAY_PASSWORD PUBLIC_HOSTNAME PORT
-envsubst '${ICECAST_SOURCE_PASSWORD} ${ICECAST_ADMIN_PASSWORD} ${ICECAST_RELAY_PASSWORD} ${PUBLIC_HOSTNAME}' \
+envsubst '${ICECAST_SOURCE_PASSWORD} ${ICECAST_ADMIN_PASSWORD} ${ICECAST_RELAY_PASSWORD} ${PUBLIC_HOSTNAME} ${PORT}' \
   < /opt/radio/icecast.xml.template > /etc/icecast2/icecast.xml
 
 icecast2 -c /etc/icecast2/icecast.xml -b
