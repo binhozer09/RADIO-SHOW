@@ -1,58 +1,46 @@
 <!doctype html>
-<html lang="pt-BR"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#100b20"><title>RADIO SHOW</title>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#090b12">
+<title>Linux Remoto</title>
 <style>
-*{box-sizing:border-box}[hidden]{display:none!important}body{margin:0;min-height:100svh;background:radial-gradient(ellipse at 50% 10%,#38205e,#171025 55%,#0b0812);color:#fff;font-family:system-ui,-apple-system,Segoe UI,sans-serif;display:grid;place-items:center;padding:20px}main{width:min(100%,760px);text-align:center}.brand{font-size:clamp(2.4rem,10vw,4.4rem);font-weight:900;letter-spacing:.12em;margin:0;text-shadow:0 0 28px #b56aff66}.sub{color:#c9b8df;letter-spacing:.16em;text-transform:uppercase;font-size:.78rem;margin:8px 0 24px}.live{display:inline-flex;align-items:center;gap:8px;background:#123c2c;color:#a9ffd0;border:1px solid #267a51;border-radius:99px;padding:7px 14px;font-size:.75rem;font-weight:800;letter-spacing:.12em;margin-bottom:18px}.dot{width:8px;height:8px;border-radius:50%;background:#39e58c;box-shadow:0 0 10px #39e58c}.track{font-weight:700;min-height:24px;margin:12px 0 6px}.status{color:#d7c7e8;min-height:24px;font-size:.9rem;margin:8px 0 14px}.meta,.note{font-size:.75rem;color:#a995bd;line-height:1.5}.player{width:100%;aspect-ratio:16/9;background:#08060d;border-radius:18px;overflow:hidden;box-shadow:0 0 45px #a76ae833}.player iframe{width:100%;height:100%;border:0}.note{max-width:600px;margin:14px auto}
-</style></head><body><main>
-<h1 class="brand">RADIO SHOW</h1><p class="sub">Robinho Show • programação contínua</p><section id="diagPanel" style="margin:18px auto 0;max-width:680px;text-align:left;background:#171025;border:1px solid #76539a;border-radius:14px;padding:14px"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><strong style="flex:1">Diagnóstico da tela preta</strong><button id="copyLog" style="padding:10px 14px;border:0;border-radius:9px;background:#8b5ac4;color:#fff;font-weight:800">Copiar log</button><button id="refreshLog" style="padding:10px 12px;border:1px solid #76539a;border-radius:9px;background:#28183f;color:#fff">Atualizar</button></div><p id="diagSummary" style="font-size:13px;color:#d7c7e8;margin:10px 0">Coletando informações…</p><pre id="diagLog" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:220px;overflow:auto;background:#090710;padding:10px;border-radius:8px;font-size:11px;color:#bfe8ce;margin:0">Aguardando diagnóstico…</pre></section>
-<div class="live"><span class="dot"></span> PROGRAMAÇÃO NO RAILWAY</div>
-<div class="player" id="player"></div>
-<p class="track" id="track">Carregando a programação…</p><p class="status" id="status" role="status" aria-live="polite">Conectando ao YouTube.</p>
-<p class="meta">Player oficial do YouTube • cinco vídeos • repetição automática</p>
-<button id="remoteOpen" style="margin:10px auto 0;padding:12px 18px;border:1px solid #9b6bd1;border-radius:12px;background:#28183f;color:#fff;font-weight:700">Abrir tela Linux do Railway</button><section id="remotePanel" hidden style="position:fixed;inset:0;background:#0b0812;z-index:20;padding:12px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;gap:8px;align-items:center"><button id="remoteClose" style="padding:10px;border:0;border-radius:8px">Voltar</button><strong style="flex:1">Linux remoto • YouTube</strong></div><p id="remoteHint" style="margin:0;color:#ddd;font-size:13px">Digite a senha configurada no Railway.</p><div id="remoteLogin" style="display:flex;gap:8px"><input id="remotePass" type="password" placeholder="Senha de controle" autocomplete="off" style="min-width:0;flex:1;padding:12px;border-radius:8px"><button id="remoteConnect" style="padding:12px;border-radius:8px">Conectar</button></div><div id="remoteView" style="display:none;flex:1;min-height:0;background:#000;border-radius:8px;overflow:hidden"></div></section>
-<p class="note">O Railway guarda o ponto da programação e calcula o vídeo e o tempo atuais para retomar quando o aplicativo for aberto novamente. A reprodução é feita diretamente pelo YouTube.</p>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#090b12;color:#f5f7fb;font-family:system-ui,-apple-system,Segoe UI,sans-serif}body{min-height:100svh}.app{min-height:100svh;display:flex;flex-direction:column;padding:calc(20px + env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom));gap:16px}.head{text-align:center;padding:18px 8px 8px}.head h1{font-size:27px;letter-spacing:.04em;margin:0 0 6px}.head p{margin:0;color:#9da8b9;font-size:14px}.panel{width:100%;max-width:720px;margin:0 auto;background:#151b27;border:1px solid #293449;border-radius:18px;padding:18px;box-shadow:0 12px 38px #0005}.label{font-size:13px;color:#b9c5d7;margin:0 0 8px}.password{width:100%;height:50px;border:1px solid #39475d;border-radius:11px;background:#0c111b;color:#fff;padding:0 14px;font-size:16px;outline:none}.password:focus{border-color:#63a5ff}.actions{display:flex;gap:10px;margin-top:12px}.btn{min-height:48px;border:0;border-radius:11px;padding:0 16px;font-weight:750;font-size:15px;cursor:pointer}.primary{background:#2475e8;color:white;flex:1}.secondary{background:#293449;color:#e8eef8}.btn:disabled{opacity:.55}.status{display:flex;align-items:center;gap:9px;margin:14px 0 0;color:#b9c5d7;font-size:13px;min-height:20px}.dot{width:9px;height:9px;border-radius:50%;background:#e0a43c;flex:none}.dot.ok{background:#37d68a}.dot.bad{background:#ff6666}.tip{text-align:center;color:#77849a;font-size:12px;line-height:1.5;margin:auto auto 0;max-width:520px}.screen{display:none;position:fixed;inset:0;z-index:5;background:#000;padding:0}.screen.active{display:flex;flex-direction:column}.screenbar{height:48px;flex:none;display:flex;align-items:center;gap:8px;padding:4px 8px;background:#111722;color:white}.screenbar strong{font-size:14px;flex:1}.screenbar button{height:36px;padding:0 12px;border:0;border-radius:8px;background:#293449;color:white;font-weight:700}.remote{flex:1;min-height:0;width:100%;border:0;background:#000}.screenhint{position:absolute;left:10px;right:10px;bottom:10px;z-index:2;background:#111722df;border:1px solid #ffffff22;border-radius:9px;padding:9px 12px;font-size:12px;color:#e8eef8;pointer-events:none}
+</style>
+</head>
+<body>
+<main class="app">
+<header class="head"><h1>LINUX REMOTO</h1><p>Conexão direta com o desktop hospedado no Railway</p></header>
+<section class="panel">
+<p class="label">Senha de acesso remoto</p>
+<input id="password" class="password" type="password" autocomplete="off" placeholder="Digite a senha do Railway">
+<div class="actions"><button id="connect" class="btn primary">Conectar ao Linux</button></div>
+<p class="status"><span id="dot" class="dot"></span><span id="status" role="status" aria-live="polite">Verificando servidor remoto…</span></p>
+</section>
+<p class="tip">Este aplicativo agora é dedicado somente à conexão remota com o Linux. Mantenha a internet ativa durante a sessão.</p>
 </main>
+<section id="screen" class="screen" aria-label="Desktop Linux remoto">
+<div class="screenbar"><button id="back">Voltar</button><strong>Desktop Linux • Railway</strong><button id="fullscreen">Tela cheia</button><button id="reconnect">Reconectar</button></div>
+<iframe id="remote" class="remote" title="Desktop Linux remoto" allow="clipboard-read; clipboard-write; fullscreen"></iframe>
+<div id="screenhint" class="screenhint">Solicitando conexão com o desktop Linux…</div>
+</section>
 <script>
 const API="https://radio-show-stream-production.up.railway.app";
-const diagLines=[];
-function logDiag(type,detail){const line=new Date().toISOString()+" ["+type+"] "+String(detail);diagLines.push(line);if(diagLines.length>250)diagLines.shift();const out=document.getElementById("diagLog");if(out){out.textContent=diagLines.join("\n");out.scrollTop=out.scrollHeight;}const sum=document.getElementById("diagSummary");if(sum)sum.textContent=diagLines.length+" eventos registrados • último: "+type;}
-function describeError(e){return e?.stack||e?.message||String(e);}
-logDiag("APP","RADIO SHOW iniciado; userAgent="+navigator.userAgent);
-window.addEventListener("error",e=>logDiag("JS_ERROR",e.message+" em "+e.filename+":"+e.lineno+":"+e.colno));
-window.addEventListener("unhandledrejection",e=>logDiag("PROMISE_ERROR",describeError(e.reason)));
-window.addEventListener("message",e=>{if(e.data&&e.data.radioShowRemote)logDiag("REMOTE_VNC",e.data.message||JSON.stringify(e.data));});
-document.getElementById("copyLog").addEventListener("click",async()=>{const report="RADIO SHOW - RELATÓRIO DE DIAGNÓSTICO\nGerado: "+new Date().toISOString()+"\nURL: "+location.href+"\nUser-Agent: "+navigator.userAgent+"\n\n"+diagLines.join("\n");try{await navigator.clipboard.writeText(report);document.getElementById("diagSummary").textContent="Log copiado! Agora cole aqui na conversa."; }catch(e){const t=document.createElement("textarea");t.value=report;document.body.appendChild(t);t.select();const ok=document.execCommand("copy");t.remove();document.getElementById("diagSummary").textContent=ok?"Log copiado! Cole aqui na conversa.":"Não foi possível copiar; selecione o texto do quadro.";logDiag("COPY",describeError(e));}});
-document.getElementById("refreshLog").addEventListener("click",async()=>{logDiag("MANUAL","Coleta manual solicitada");for(const p of ["/health","/api/remote-status","/api/cloud-status"]){try{const r=await fetch(API+p,{cache:"no-store"});const body=await r.text();logDiag("HTTP "+r.status,p+" => "+body.slice(0,1800));}catch(e){logDiag("NETWORK_ERROR",p+" => "+describeError(e));}}});
-
-let ids=[],durations=[240,240,240,240,240],player,heartbeat;
-const track=document.getElementById("track"),status=document.getElementById("status");
-async function api(path,options={}){logDiag("API_REQUEST",path);try{const r=await fetch(API+path,{cache:"no-store",...options});const body=await r.text();logDiag("API_RESPONSE",path+" HTTP "+r.status+" "+body.slice(0,1000));if(!r.ok)throw new Error("Servidor "+r.status);return JSON.parse(body);}catch(e){logDiag("API_ERROR",path+" "+describeError(e));throw e;}}
-async function start(){
- try{
-  const [list,sync]=await Promise.all([api("/api/playlist"),api("/api/sync")]);
-  ids=list.playlist.map(x=>x.videoId);durations=sync.durations||durations;
-  if(!ids.length)throw new Error("A programação está vazia.");
-  const tag=document.createElement("script");tag.src="https://www.youtube.com/iframe_api";document.head.appendChild(tag);
-  window.onYouTubeIframeAPIReady=()=>createPlayer(sync);
- }catch(e){track.textContent="Não foi possível carregar";status.textContent=e.message;}
-}
-function createPlayer(sync){
- player=new YT.Player("player",{videoId:sync.videoId||ids[0],playerVars:{autoplay:1,controls:1,playsinline:1,rel:0,loop:1,playlist:ids.join(","),start:Math.max(0,sync.currentTime||0),enablejsapi:1},events:{onReady:e=>{e.target.playVideo();status.textContent="Player oficial do YouTube conectado.";heartbeat=setInterval(report,7000);},onStateChange:e=>{if(e.data===YT.PlayerState.PLAYING){track.textContent="Robinho Show • vídeo "+(ids.indexOf(e.target.getVideoData().video_id)+1)+" de "+ids.length;status.textContent="Reprodução ativa pelo YouTube.";report();}if(e.data===YT.PlayerState.ENDED)e.target.nextVideo();},onError:e=>{status.textContent="O YouTube informou erro "+e.data+". Tentando o próximo vídeo.";try{e.target.nextVideo();}catch{}}}});
-}
-async function report(){
- if(!player||!player.getCurrentTime)return;
- try{const id=player.getVideoData().video_id,index=ids.indexOf(id);if(index<0)return;
-  const d=player.getDuration();if(d>0)durations[index]=d;
-  await api("/api/sync",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({index,currentTime:player.getCurrentTime(),durations})});
- }catch(e){status.textContent="Sem conexão com o sincronizador; o YouTube continua no aparelho.";}
-}
-
-const remotePanel=document.getElementById("remotePanel"),remoteOpen=document.getElementById("remoteOpen"),remoteClose=document.getElementById("remoteClose"),remoteConnect=document.getElementById("remoteConnect"),remotePass=document.getElementById("remotePass"),remoteLogin=document.getElementById("remoteLogin"),remoteView=document.getElementById("remoteView"),remoteHint=document.getElementById("remoteHint");
-remoteOpen.addEventListener("click",async()=>{remotePanel.hidden=false;logDiag("REMOTE_OPEN","Painel Linux aberto");remoteHint.textContent="Verificando disponibilidade da tela Linux…";try{const r=await api("/api/remote-status");remoteHint.textContent=r.enabled?"Digite a senha de controle do Railway e toque em Conectar.":r.message;}catch(e){remoteHint.textContent="Não foi possível alcançar o Railway: "+e.message;}});
-remoteClose.addEventListener("click",()=>{remotePanel.hidden=true;remoteView.replaceChildren();remoteView.style.display="none";remoteLogin.style.display="flex";remotePass.value="";});
-remoteConnect.addEventListener("click",async()=>{const pass=remotePass.value.trim();if(!pass){remoteHint.textContent="Digite a senha para continuar.";return;}remoteConnect.disabled=true;remoteHint.textContent="Abrindo a sessão Linux…";try{const r=await api("/api/remote-status");if(!r.enabled)throw new Error(r.message);logDiag("REMOTE_CONNECT","Solicitando sessão VNC; senha preenchida="+!!pass);const frame=document.createElement("iframe");frame.title="Tela Linux remota do Railway";frame.allow="autoplay; clipboard-read; clipboard-write";frame.style.cssText="width:100%;height:100%;border:0;background:#000";frame.src=API+"/remote/?token="+encodeURIComponent(pass);remoteView.replaceChildren(frame);remoteLogin.style.display="none";remoteView.style.display="block";remoteHint.textContent="Conectando à tela Linux…";frame.addEventListener("load",()=>{logDiag("REMOTE_IFRAME_LOAD","Iframe carregou; isso não garante conexão VNC.");remoteHint.textContent="Sessão aberta. Se a tela não aparecer, confira a senha do Railway.";});}catch(e){remoteHint.textContent=e.message;}finally{remoteConnect.disabled=false;}});
-remotePass.addEventListener("keydown",e=>{if(e.key==="Enter")remoteConnect.click();});
-
-start();
-</script></body></html>
+const $=id=>document.getElementById(id);
+const password=$("password"),connect=$("connect"),status=$("status"),dot=$("dot"),screen=$("screen"),frame=$("remote"),hint=$("screenhint");
+let currentToken="";
+function setStatus(message,state="wait"){status.textContent=message;dot.className="dot"+(state==="ok"?" ok":state==="bad"?" bad":"");}
+async function checkServer(){try{const r=await fetch(API+"/api/remote-status",{cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);const data=await r.json();if(!data.enabled)throw new Error(data.message||"Desktop remoto desativado no Railway.");setStatus("Servidor Railway disponível. Digite a senha para conectar.","ok");}catch(e){setStatus("Não foi possível acessar o servidor: "+e.message,"bad");}}
+function openRemote(){if(!currentToken){setStatus("Digite a senha de acesso.","bad");return;}connect.disabled=true;setStatus("Abrindo a sessão Linux…");hint.textContent="Carregando a tela remota e conectando ao VNC…";screen.classList.add("active");frame.src=API+"/remote/?token="+encodeURIComponent(currentToken);setStatus("Solicitação enviada ao Linux remoto.");}
+function closeRemote(){frame.src="about:blank";screen.classList.remove("active");currentToken="";password.value="";connect.disabled=false;setStatus("Sessão encerrada. Digite a senha para conectar novamente.");}
+connect.addEventListener("click",()=>{const p=password.value.trim();if(!p){setStatus("Digite a senha do Railway.","bad");password.focus();return;}currentToken=p;openRemote();});
+password.addEventListener("keydown",e=>{if(e.key==="Enter")connect.click();});
+$("back").addEventListener("click",closeRemote);
+$("reconnect").addEventListener("click",()=>{frame.src="about:blank";setTimeout(()=>{frame.src=API+"/remote/?token="+encodeURIComponent(currentToken);hint.textContent="Tentando reconectar ao desktop Linux…";},150);});
+$("fullscreen").addEventListener("click",async()=>{try{if(!document.fullscreenElement)await screen.requestFullscreen();else await document.exitFullscreen();}catch(e){hint.textContent="Tela cheia não disponível neste aparelho.";}}); 
+frame.addEventListener("load",()=>{if(screen.classList.contains("active"))hint.textContent="Página remota carregada. Aguardando conexão VNC…";});
+window.addEventListener("message",e=>{if(e.data&&e.data.radioShowRemote){hint.textContent=e.data.message||"Estado da conexão remota atualizado.";if(String(e.data.message||"").includes("CONECTADO"))setStatus("Linux conectado com sucesso.","ok");if(String(e.data.message||"").includes("DESCONECTADO")||String(e.data.message||"").includes("FALHA"))setStatus(e.data.message,"bad");}});
+checkServer();
+</script>
+</body></html>
