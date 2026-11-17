@@ -40,6 +40,10 @@
     <logsize>10000</logsize>
   </logging>
   <security>
+    <changeowner>
+      <user>icecast2</user>
+      <group>icecast</group>
+    </changeowner>
     <chroot>0</chroot>
   </security>
 </icecast>
