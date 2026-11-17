@@ -56,16 +56,16 @@ async function loadPlaylist(){
     currentIndex=0;
     metaEl.textContent=playlist.length+" vídeos • ordem fixa • repetição automática";
     showTrack();
-    setStatus("Servidor online. Toque em OUVIR AGORA para começar.");
-    if(playerReady&&started)playCurrent();
+    setStatus("Servidor online. Tentando iniciar a reprodução automaticamente…");
+    if(playerReady)playCurrent();
   }catch(error){setStatus(error.message);trackEl.textContent="Não foi possível carregar a rádio.";}
 }
 function onYouTubeIframeAPIReady(){
   player=new YT.Player("player",{
     width:"100%",height:"100%",
-    playerVars:{autoplay:0,controls:1,rel:0,playsinline:1,enablejsapi:1,origin:location.origin},
+    playerVars:{autoplay:1,controls:1,rel:0,playsinline:1,enablejsapi:1,origin:location.origin},
     events:{
-      onReady:function(){playerReady=true;if(!playlist.length)loadPlaylist();},
+      onReady:function(){playerReady=true;if(!playlist.length)loadPlaylist();else playCurrent();},
       onStateChange:function(event){
         if(event.data===YT.PlayerState.PLAYING)setStatus("Tocando • sequência automática ativa.");
         else if(event.data===YT.PlayerState.PAUSED)setStatus("Pausado. Toque em OUVIR AGORA para continuar.");
