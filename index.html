@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#100b20">
+  <meta name="description" content="RADIO SHOW — música de Robinho Show.">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <title>RADIO SHOW</title>
+  <style>
+    :root{color-scheme:dark;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:#100b20;color:#fff}
+    *{box-sizing:border-box}body{margin:0;min-height:100svh;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 15%,#38205e 0,#1b1230 42%,#0b0812 100%);padding:24px}
+    main{width:min(100%,430px);text-align:center}.brand{font-size:clamp(2.3rem,12vw,4rem);font-weight:900;letter-spacing:.12em;margin:0;text-shadow:0 0 28px #b56aff66}
+    .sub{color:#c9b8df;margin:9px 0 30px;letter-spacing:.16em;font-size:.8rem;text-transform:uppercase}
+    .disc-wrap{width:210px;height:210px;margin:0 auto 30px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#a45cff,#51238c 55%,#1d1230);box-shadow:0 18px 70px #9b4dff40}
+    .disc{width:174px;height:174px;border-radius:50%;display:grid;place-items:center;background:repeating-radial-gradient(circle,#171020 0 3px,#30203f 4px 5px);border:7px solid #171020;position:relative}
+    .disc:after{content:"";width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#f4c5ff,#a34dff);border:5px solid #171020}
+    .disc.playing{animation:spin 5s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+    .status{min-height:24px;color:#d7c7e8;font-size:.92rem;margin:0 0 24px}
+    .controls{display:flex;justify-content:center;gap:14px}.control{border:0;border-radius:999px;padding:16px 30px;min-width:132px;font-weight:800;letter-spacing:.12em;font-size:1rem;cursor:pointer}
+    #play{background:linear-gradient(135deg,#d9a6ff,#9747e8);color:#190c28;box-shadow:0 8px 28px #a34dff55}#pause{background:#2b203a;color:#eee;border:1px solid #61477c}
+    .player{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.channel{display:inline-block;margin-top:30px;color:#bca4d8;font-size:.85rem;text-decoration:none}
+    .note{font-size:.74rem;line-height:1.5;color:#8f7da7;margin:22px auto 0;max-width:330px}
+    button:focus-visible,a:focus-visible{outline:3px solid #e4c4ff;outline-offset:4px}
+  </style>
+</head>
+<body>
+<main>
+  <h1 class="brand">RADIO SHOW</h1>
+  <p class="sub">A sua música, sempre com você</p>
+  <div class="disc-wrap"><div class="disc" id="disc" aria-hidden="true"></div></div>
+  <p class="status" id="status" role="status">Pronto para tocar</p>
+  <div class="controls">
+    <button class="control" id="play" type="button">▶ PLAY</button>
+    <button class="control" id="pause" type="button">Ⅱ PAUSE</button>
+  </div>
+  <a class="channel" href="https://www.youtube.com/@RobinhoShowOficial" target="_blank" rel="noopener">Canal oficial de Robinho Show ↗</a>
+  <p class="note">A reprodução usa o player oficial do YouTube. Para ativar a sequência automática, é necessário configurar uma playlist pública com as músicas de até 5 minutos.</p>
+  <div class="player" id="player" aria-hidden="true"></div>
+</main>
+<script>
+  // Configure YOUTUBE_PLAYLIST_ID após criar/selecionar a playlist oficial.
+  const YOUTUBE_PLAYLIST_ID = "";
+  const statusEl = document.getElementById("status");
+  const disc = document.getElementById("disc");
+  let player = null;
+  let apiReady = false;
+  function setPlaying(on) {
+    disc.classList.toggle("playing", on);
+    statusEl.textContent = on ? "Reproduzindo" : "Pausado";
+  }
+  function loadYouTubeApi() {
+    if (document.getElementById("yt-api")) return;
+    const script = document.createElement("script");
+    script.id = "yt-api";
+    script.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(script);
+  }
+  window.onYouTubeIframeAPIReady = function () {
+    apiReady = true;
+    if (!YOUTUBE_PLAYLIST_ID) {
+      statusEl.textContent = "Playlist oficial ainda não configurada";
+      return;
+    }
+    player = new YT.Player("player", {
+      height: "1", width: "1",
+      playerVars: { listType: "playlist", list: YOUTUBE_PLAYLIST_ID, playsinline: 1, rel: 0 },
+      events: { onReady: () => { statusEl.textContent = "Pronto para tocar"; }, onStateChange: e => setPlaying(e.data === YT.PlayerState.PLAYING) }
+    });
+  };
+  document.getElementById("play").addEventListener("click", () => {
+    if (!YOUTUBE_PLAYLIST_ID) {
+      statusEl.textContent = "Falta configurar a playlist de músicas";
+      window.open("https://www.youtube.com/@RobinhoShowOficial", "_blank", "noopener");
+      return;
+    }
+    if (!apiReady || !player) { loadYouTubeApi(); statusEl.textContent = "Carregando player…"; return; }
+    player.playVideo();
+  });
+  document.getElementById("pause").addEventListener("click", () => {
+    if (player) player.pauseVideo();
+    setPlaying(false);
+  });
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
+</script>
+</body>
+</html>
