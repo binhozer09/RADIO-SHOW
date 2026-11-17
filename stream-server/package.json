@@ -1,0 +1,12 @@
+{
+  "name": "radio-show-youtube-sync",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Servidor de programação e sincronização do player oficial do YouTube para RADIO SHOW",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
