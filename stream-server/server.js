@@ -5,11 +5,18 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const PORT = Number(process.env.PORT || 8000);
-const API_KEY = process.env.YOUTUBE_API_KEY || "";
-const CHANNEL_HANDLE = (process.env.YOUTUBE_CHANNEL_HANDLE || "RobinhoShowOficial").replace(/^@/, "");
 const MAX_DURATION_SECONDS = Math.min(300, Math.max(1, Number(process.env.MAX_DURATION_SECONDS || 300)));
 const STATE_FILE = process.env.STATE_FILE || "/music/schedule.json";
-const REFRESH_MS = 15 * 60 * 1000;
+const REFRESH_MS = 6 * 60 * 60 * 1000;
+
+// Lista fixa enviada pelo responsável pela rádio. Nenhuma YouTube Data API é usada.
+const VIDEO_IDS = [
+  "bWO1FNUTIao",
+  "rBhKH-pTYGQ",
+  "WffuNC-EjzY",
+  "0YF7iz9Z-4k",
+  "zyvCntqPnjE"
+];
 
 let schedule = null;
 let lastRefresh = 0;
@@ -26,65 +33,27 @@ function send(res, status, body) {
   res.end(JSON.stringify(body));
 }
 
-function durationSeconds(value) {
-  const m = /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/.exec(value || "");
-  if (!m) return 0;
-  return (Number(m[1] || 0) * 3600) + (Number(m[2] || 0) * 60) + Number(m[3] || 0);
+async function fetchVideoMetadata(videoId) {
+  const response = await fetch("https://www.youtube.com/watch?v=" + encodeURIComponent(videoId) + "&hl=pt-BR", {
+    headers: { "user-agent": "Mozilla/5.0 (compatible; RadioShow/1.0)", "accept-language": "pt-BR,pt;q=0.9,en;q=0.8" },
+    signal: AbortSignal.timeout(15000)
+  });
+  if (!response.ok) throw new Error("YouTube retornou HTTP " + response.status + " para " + videoId);
+  const html = await response.text();
+  const durationMatch = html.match(/"lengthSeconds"\s*:\s*"?(\d+)"?/);
+  if (!durationMatch) throw new Error("Não foi possível ler a duração do vídeo " + videoId + " na página do YouTube.");
+  const durationSeconds = Number(durationMatch[1]);
+  if (!Number.isFinite(durationSeconds) || durationSeconds < 1 || durationSeconds > MAX_DURATION_SECONDS) {
+    throw new Error("O vídeo " + videoId + " não atende ao limite de " + MAX_DURATION_SECONDS + " segundos.");
+  }
+  const titleMatch = html.match(/<meta\s+name="title"\s+content="([^"]*)"/i) || html.match(/<title>([^<]*)<\/title>/i);
+  const title = titleMatch ? titleMatch[1].replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"') : "Robinho Show";
+  return { videoId, title, durationSeconds };
 }
 
-async function youtube(url) {
-  const response = await fetch(url);
-  const data = await response.json();
-  if (!response.ok || data.error) {
-    const message = data.error?.message || ("YouTube API HTTP " + response.status);
-    throw new Error(message);
-  }
-  return data;
-}
-
-async function fetchEligibleVideos() {
-  if (!API_KEY) throw new Error("YOUTUBE_API_KEY não configurada no Railway.");
-  const channelUrl = new URL("https://www.googleapis.com/youtube/v3/channels");
-  channelUrl.search = new URLSearchParams({ part: "contentDetails", forHandle: CHANNEL_HANDLE, key: API_KEY });
-  const channel = await youtube(channelUrl);
-  const uploadsId = channel.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
-  if (!uploadsId) throw new Error("Não foi possível localizar a playlist de envios do canal @" + CHANNEL_HANDLE + ".");
-  const ids = [];
-  let pageToken = "";
-  do {
-    const playlistUrl = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
-    const params = { part: "contentDetails", playlistId: uploadsId, maxResults: "50", key: API_KEY };
-    if (pageToken) params.pageToken = pageToken;
-    playlistUrl.search = new URLSearchParams(params);
-    const playlist = await youtube(playlistUrl);
-    ids.push(...(playlist.items || []).map(item => item.contentDetails?.videoId).filter(Boolean));
-    pageToken = playlist.nextPageToken || "";
-  } while (pageToken && ids.length < 200);
-  const uniqueIds = [...new Set(ids)].slice(0, 200);
-  if (!uniqueIds.length) throw new Error("A playlist de envios do canal não retornou vídeos.");
-
-  const byId = new Map();
-  for (let i = 0; i < uniqueIds.length; i += 50) {
-    const videosUrl = new URL("https://www.googleapis.com/youtube/v3/videos");
-    videosUrl.search = new URLSearchParams({
-      part: "contentDetails,status,snippet",
-      id: uniqueIds.slice(i, i + 50).join(","),
-      key: API_KEY
-    });
-    const details = await youtube(videosUrl);
-    for (const video of (details.items || [])) byId.set(video.id, video);
-  }
-  const eligible = uniqueIds.map(id => byId.get(id)).filter(video => {
-    if (!video || video.status?.embeddable === false || video.status?.privacyStatus === "private") return false;
-    const seconds = durationSeconds(video.contentDetails?.duration);
-    return seconds > 0 && seconds <= MAX_DURATION_SECONDS;
-  }).map(video => ({
-    videoId: video.id,
-    title: video.snippet?.title || "Robinho Show",
-    durationSeconds: durationSeconds(video.contentDetails.duration)
-  }));
-  if (!eligible.length) throw new Error("Nenhum vídeo público incorporável de até " + MAX_DURATION_SECONDS + " segundos foi encontrado entre os 200 envios mais recentes.");
-  return eligible;
+async function fetchFixedPlaylist() {
+  // Só consulta metadados públicos das cinco páginas; nenhum áudio/vídeo é baixado.
+  return Promise.all(VIDEO_IDS.map(fetchVideoMetadata));
 }
 
 function saveState() {
@@ -92,14 +61,14 @@ function saveState() {
     fs.mkdirSync(path.dirname(STATE_FILE), { recursive: true });
     fs.writeFileSync(STATE_FILE, JSON.stringify(schedule), "utf8");
   } catch (error) {
-    console.error("Não foi possível persistir o relógio da programação:", error.message);
+    console.error("Não foi possível persistir a programação:", error.message);
   }
 }
 
 function loadState() {
   try {
     const value = JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
-    if (Array.isArray(value.videos) && value.videos.length && Number.isFinite(value.startAt)) schedule = value;
+    if (Array.isArray(value.videos) && value.videos.length === VIDEO_IDS.length && Number.isFinite(value.startAt)) schedule = value;
   } catch (_) {}
 }
 
@@ -107,27 +76,27 @@ async function refreshSchedule(force = false) {
   if (refreshPromise) return refreshPromise;
   if (!force && schedule && Date.now() - lastRefresh < REFRESH_MS) return schedule;
   refreshPromise = (async () => {
-    const videos = await fetchEligibleVideos();
+    const videos = await fetchFixedPlaylist();
     const fingerprint = videos.map(v => v.videoId + ":" + v.durationSeconds).join("|");
     if (!schedule || schedule.fingerprint !== fingerprint) {
       schedule = { videos, fingerprint, startAt: Date.now(), updatedAt: new Date().toISOString() };
       saveState();
-      console.log("Programação sincronizada: " + videos.length + " vídeos elegíveis; início " + schedule.updatedAt);
+      console.log("Programação fixa sincronizada: " + videos.length + " vídeos; início " + schedule.updatedAt);
     } else {
       schedule.videos = videos;
       schedule.updatedAt = new Date().toISOString();
       saveState();
-      console.log("Catálogo atualizado: " + videos.length + " vídeos; relógio global preservado.");
+      console.log("Metadados das cinco músicas atualizados; relógio global preservado.");
     }
     lastRefresh = Date.now();
     lastError = null;
     return schedule;
   })().catch(error => {
     lastError = error.message;
-    console.error("Falha ao atualizar catálogo do YouTube:", error.message);
+    console.error("Falha ao atualizar programação:", error.message);
     if (schedule) {
       lastRefresh = Date.now();
-      console.warn("Usando o último catálogo persistido até a próxima tentativa.");
+      console.warn("Mantendo a última programação persistida.");
       return schedule;
     }
     throw error;
@@ -173,17 +142,22 @@ const server = http.createServer(async (req, res) => {
   }
   const url = new URL(req.url, "http://" + (req.headers.host || "localhost"));
   if (req.method === "GET" && url.pathname === "/health") {
-    return send(res, 200, { ok: true, service: "RADIO SHOW YouTube Sync", scheduleLoaded: Boolean(schedule), apiKeyConfigured: Boolean(API_KEY) });
+    return send(res, 200, {
+      ok: true,
+      service: "RADIO SHOW YouTube Sync",
+      scheduleLoaded: Boolean(schedule),
+      playlistSize: VIDEO_IDS.length,
+      metadataError: lastError
+    });
   }
   if (req.method === "GET" && url.pathname === "/api/now-playing") {
     try {
       await refreshSchedule();
       return send(res, 200, nowPlaying());
     } catch (error) {
-      return send(res, API_KEY ? 503 : 424, {
+      return send(res, 503, {
         error: "A programação ainda não pode ser sincronizada.",
         detail: error.message,
-        setupRequired: !API_KEY,
         cachedScheduleAvailable: Boolean(schedule)
       });
     }
