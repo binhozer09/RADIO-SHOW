@@ -1,12 +1,12 @@
 FROM node:22-bookworm-slim
 ENV NODE_ENV=production
-ENV PULSE_SERVER=127.0.0.1
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends chromium pulseaudio ca-certificates fonts-liberation xvfb x11vnc openbox novnc websockify && rm -rf /var/lib/apt/lists/*
-COPY package.json ./
-RUN npm install --omit=dev
-COPY server.js ./
-COPY cloud-player.html ./
-COPY remote.html ./
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    xvfb x11vnc openbox xterm novnc websockify xfonts-base fonts-dejavu-core \
+    ca-certificates bash procps curl nano vim-tiny htop git python3 python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+COPY server.js ./server.js
+COPY index.html ./index.html
+COPY remote.html ./remote.html
 EXPOSE 8000
 CMD ["npm", "start"]
