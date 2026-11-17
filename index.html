@@ -2,29 +2,95 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#100b20"><meta name="description" content="RADIO SHOW — vídeos do canal Robinho Show diretamente do YouTube.">
+<meta name="theme-color" content="#100b20"><meta name="description" content="RADIO SHOW — programação sincronizada do Robinho Show pelo player oficial do YouTube.">
 <title>RADIO SHOW</title>
 <style>
 *{box-sizing:border-box}body{margin:0;min-height:100svh;background:radial-gradient(ellipse at 50% 10%,#38205e,#171025 55%,#0b0812);color:#fff;font-family:system-ui,-apple-system,Segoe UI,sans-serif;display:grid;place-items:center;padding:20px}
 main{width:min(100%,720px);text-align:center}.brand{font-size:clamp(2.4rem,10vw,4.4rem);font-weight:900;letter-spacing:.12em;margin:0;text-shadow:0 0 28px #b56aff66}.sub{color:#c9b8df;letter-spacing:.16em;text-transform:uppercase;font-size:.78rem;margin:8px 0 26px}
 .live{display:inline-flex;align-items:center;gap:8px;background:#4b1525;color:#ffb6c3;border:1px solid #8e344c;border-radius:99px;padding:7px 14px;font-size:.75rem;font-weight:800;letter-spacing:.12em;margin-bottom:14px}.dot{width:8px;height:8px;border-radius:50%;background:#ff385c;box-shadow:0 0 10px #ff385c}
 .player{width:100%;aspect-ratio:16/9;background:#08060d;border:1px solid #62477d;border-radius:18px;overflow:hidden;box-shadow:0 18px 60px #0008}.player iframe{width:100%;height:100%;border:0}
-.status{color:#d7c7e8;min-height:24px;font-size:.9rem;margin:16px 0}.actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}button{border:0;border-radius:99px;padding:13px 22px;font-weight:800;cursor:pointer;background:linear-gradient(135deg,#d9a6ff,#9747e8);color:#190c28}a{color:#d9a6ff;text-decoration:none;font-size:.88rem;padding:13px}.note{font-size:.75rem;line-height:1.5;color:#9d8caf;max-width:560px;margin:18px auto 0}
+.status{color:#d7c7e8;min-height:24px;font-size:.9rem;margin:16px 0}.track{font-weight:700;min-height:22px;margin:4px 0 12px}.meta{font-size:.75rem;color:#a995bd;margin:0 0 16px}
+.actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}button{border:0;border-radius:99px;padding:13px 22px;font-weight:800;cursor:pointer;background:linear-gradient(135deg,#d9a6ff,#9747e8);color:#190c28}a{color:#d9a6ff;text-decoration:none;font-size:.88rem;padding:13px}.note{font-size:.75rem;line-height:1.5;color:#9d8caf;max-width:580px;margin:18px auto 0}
 </style></head>
 <body><main>
-<h1 class="brand">RADIO SHOW</h1><p class="sub">Robinho Show • programação do YouTube</p>
-<div class="live"><span class="dot"></span> TOCANDO NO YOUTUBE</div>
-<div class="player"><iframe id="livePlayer" title="Vídeos do canal Robinho Show no YouTube" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
-<p class="status" id="status" role="status" aria-live="polite">Abrindo os vídeos do canal Robinho Show…</p>
-<div class="actions"><button id="reload" type="button">↻ RECARREGAR PROGRAMAÇÃO</button><a href="https://www.youtube.com/@robinhoshowoficial/live" target="_blank" rel="noopener">Abrir no YouTube ↗</a></div>
-<p class="note">O aplicativo acompanha a live ativa do canal oficial. Para todos ouvirem exatamente o mesmo ponto, o canal precisa manter uma transmissão ao vivo contínua. A reprodução automática depende das permissões do Android e do YouTube; se for bloqueada, toque no player.</p>
+<h1 class="brand">RADIO SHOW</h1><p class="sub">Robinho Show • rádio sincronizada</p>
+<div class="live"><span class="dot"></span> PROGRAMAÇÃO GLOBAL</div>
+<div class="player"><div id="player"></div></div>
+<p class="track" id="track">Conectando à programação…</p>
+<p class="status" id="status" role="status" aria-live="polite">Consultando o relógio da rádio na nuvem.</p>
+<p class="meta" id="meta">Todos os aparelhos recebem o mesmo vídeo e a mesma posição.</p>
+<div class="actions"><button id="listen" type="button">▶ OUVIR AGORA</button><button id="reload" type="button">↻ SINCRONIZAR</button><a href="https://www.youtube.com/@robinhoshowoficial" target="_blank" rel="noopener">Canal oficial ↗</a></div>
+<p class="note">Os vídeos são reproduzidos diretamente pelo player oficial do YouTube, sem baixar ou salvar músicas. A programação da nuvem continua avançando com o celular desligado; para escutar, cada ouvinte precisa manter o aplicativo aberto e conectado. A reprodução automática pode ser bloqueada pelo Android/YouTube até o primeiro toque.</p>
 </main>
 <script>
-const UPLOADS_PLAYLIST_ID = "UUcYfAB9N908fAKaVFEFxxQA";
-const frame = document.getElementById("livePlayer");
-const status = document.getElementById("status");
-function openLive(){frame.src="https://www.youtube.com/embed/videoseries?list="+UPLOADS_PLAYLIST_ID+"&autoplay=1&loop=1&playsinline=1&rel=0";status.textContent="Carregando a playlist de vídeos do canal Robinho Show…";}
-document.getElementById("reload").addEventListener("click",openLive);
-frame.addEventListener("load",()=>{status.textContent="Player oficial do YouTube carregado. Se a reprodução automática for bloqueada, toque no vídeo para começar.";});
-openLive();
+const API_BASE = "https://radio-show-stream-production.up.railway.app";
+const API_URL = API_BASE + "/api/now-playing";
+const statusEl = document.getElementById("status");
+const trackEl = document.getElementById("track");
+const metaEl = document.getElementById("meta");
+let player = null;
+let playerReady = false;
+let latest = null;
+let lastVideoId = null;
+let syncBusy = false;
+
+function setStatus(message){statusEl.textContent=message;}
+function onYouTubeIframeAPIReady(){
+  player = new YT.Player("player", {
+    width:"100%", height:"100%",
+    playerVars:{autoplay:1,controls:1,rel:0,playsinline:1,enablejsapi:1,origin:location.origin},
+    events:{
+      onReady:function(){playerReady=true;syncRadio();},
+      onStateChange:function(event){
+        if(event.data===YT.PlayerState.PLAYING)setStatus("Ao vivo • sincronizado com a programação da nuvem.");
+        else if(event.data===YT.PlayerState.PAUSED)setStatus("Reprodução pausada. Toque em OUVIR AGORA para continuar.");
+        else if(event.data===YT.PlayerState.ENDED)syncRadio();
+      },
+      onError:function(event){setStatus("O YouTube não permitiu este vídeo incorporado (código "+event.data+"). A rádio seguirá para o próximo na próxima sincronização.");}
+    }
+  });
+}
+window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
+
+async function syncRadio(){
+  if(syncBusy)return;
+  syncBusy=true;
+  try{
+    const response=await fetch(API_URL,{cache:"no-store"});
+    const data=await response.json();
+    if(!response.ok){
+      if(data.setupRequired)throw new Error("Falta configurar a chave da YouTube Data API no Railway (YOUTUBE_API_KEY).");
+      throw new Error(data.detail||data.error||"Servidor de programação indisponível.");
+    }
+    latest=data;
+    trackEl.textContent=data.title||"Robinho Show";
+    metaEl.textContent="Vídeo "+(data.queueIndex+1)+" de "+data.queueCount+" • máximo "+data.maxDurationSeconds+" segundos • ciclo "+(data.cycle+1);
+    if(!playerReady||!player)return;
+    if(lastVideoId!==data.videoId){
+      lastVideoId=data.videoId;
+      player.loadVideoById({videoId:data.videoId,startSeconds:data.positionSeconds});
+      setStatus("Trocando para o vídeo da programação sincronizada…");
+    }else{
+      const current=player.getCurrentTime();
+      const drift=Math.abs(current-data.positionSeconds);
+      if(Number.isFinite(current)&&drift>4)player.seekTo(data.positionSeconds,true);
+      if(player.getPlayerState()!==YT.PlayerState.PLAYING&&player.getPlayerState()!==YT.PlayerState.BUFFERING){
+        setStatus("A programação está pronta. Toque em OUVIR AGORA se o aparelho bloqueou o início automático.");
+      }
+    }
+  }catch(error){
+    setStatus(error.message);
+    if(!latest)trackEl.textContent="Aguardando configuração da rádio";
+  }finally{syncBusy=false;}
+}
+
+document.getElementById("listen").addEventListener("click",function(){
+  if(playerReady&&player){player.playVideo();if(latest&&lastVideoId!==latest.videoId)syncRadio();}
+});
+document.getElementById("reload").addEventListener("click",syncRadio);
+const tag=document.createElement("script");
+tag.src="https://www.youtube.com/iframe_api";
+document.head.appendChild(tag);
+syncRadio();
+setInterval(syncRadio,12000);
 </script></body></html>
