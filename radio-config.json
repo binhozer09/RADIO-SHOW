@@ -1,5 +1,9 @@
 {
   "stationName": "RADIO SHOW",
   "youtubeChannelId": "UCcYfAB9N908fAKaVFEFxxQA",
-  "youtubeLiveUrl": "https://www.youtube.com/@robinhoshowoficial/live"
+  "youtubeLiveUrl": "https://www.youtube.com/@robinhoshowoficial",
+  "syncApiUrl": "https://radio-show-stream-production.up.railway.app/api/now-playing",
+  "maxVideoDurationSeconds": 300,
+  "playback": "official-youtube-iframe-api",
+  "downloadsEnabled": false
 }
