@@ -13,17 +13,31 @@ TARGET = f"icecast://source:{SOURCE_PASSWORD}@127.0.0.1:{PORT}/radio.mp3"
 EXTENSIONS = {".mp3", ".m4a", ".aac", ".wav", ".ogg", ".flac"}
 
 def make_playlist():
-    tracks = sorted(
+    candidates = sorted(
         p for p in MUSIC_DIR.rglob("*")
         if p.is_file() and p.suffix.lower() in EXTENSIONS
     )
+    tracks = []
+    for candidate in candidates:
+        probe = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "default=noprint_wrappers=1:nokey=1", str(candidate)],
+            capture_output=True, text=True, check=False
+        )
+        try:
+            duration = float(probe.stdout.strip())
+        except (TypeError, ValueError):
+            continue
+        if 0 < duration <= 300:
+            tracks.append(candidate)
+
     if not tracks:
         return 0
     with PLAYLIST.open("w", encoding="utf-8") as f:
         for track in tracks:
             # FFmpeg concat demuxer escaping for paths containing quotes.
-            path = str(track).replace("\\", "\\\\").replace("'", "\\'")
-            f.write(f"file '{path}'\n")
+            escaped = str(track).replace("\\", "\\\\").replace("'", "\\'")
+            f.write(f"file '{escaped}'\\n")
     return len(tracks)
 
 while True:
