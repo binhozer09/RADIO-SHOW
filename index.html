@@ -1,51 +1,40 @@
 <!doctype html>
-<html lang="pt-BR">
-<head>
+<html lang="pt-BR"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#100b20"><title>RADIO SHOW</title>
 <style>
-*{box-sizing:border-box}body{margin:0;min-height:100svh;background:radial-gradient(ellipse at 50% 10%,#38205e,#171025 55%,#0b0812);color:#fff;font-family:system-ui,-apple-system,Segoe UI,sans-serif;display:grid;place-items:center;padding:20px}
-main{width:min(100%,680px);text-align:center}.brand{font-size:clamp(2.4rem,10vw,4.4rem);font-weight:900;letter-spacing:.12em;margin:0;text-shadow:0 0 28px #b56aff66}.sub{color:#c9b8df;letter-spacing:.16em;text-transform:uppercase;font-size:.78rem;margin:8px 0 26px}
-.live{display:inline-flex;align-items:center;gap:8px;background:#123c2c;color:#a9ffd0;border:1px solid #267a51;border-radius:99px;padding:7px 14px;font-size:.75rem;font-weight:800;letter-spacing:.12em;margin-bottom:20px}.dot{width:8px;height:8px;border-radius:50%;background:#39e58c;box-shadow:0 0 10px #39e58c}
-.disc{width:220px;height:220px;margin:8px auto 24px;border-radius:50%;background:radial-gradient(circle,#171025 0 12%,#a76ae8 13% 15%,#211432 16% 35%,#09070d 36% 60%,#4d3764 61% 63%,#100b20 64%);box-shadow:0 0 55px #a76ae855;animation:spin 7s linear infinite;animation-play-state:paused}.disc.playing{animation-play-state:running}@keyframes spin{to{transform:rotate(360deg)}}
-.status{color:#d7c7e8;min-height:24px;font-size:.9rem;margin:16px 0}.track{font-weight:700;min-height:22px;margin:4px 0 12px}.meta{font-size:.75rem;color:#a995bd;margin:0 0 16px}.note{font-size:.75rem;line-height:1.5;color:#9d8caf;max-width:580px;margin:18px auto 0}
-audio{width:100%;max-width:420px;opacity:.01;height:1px;position:absolute;pointer-events:none}
-</style></head>
-<body><main>
-<h1 class="brand">RADIO SHOW</h1><p class="sub">Robinho Show • transmissão contínua</p>
-<div class="live"><span class="dot"></span> SERVIDOR DA RÁDIO</div>
-<div class="disc" id="disc" aria-label="RADIO SHOW"></div>
-<p class="track" id="track">Conectando à transmissão…</p>
-<p class="status" id="status" role="status" aria-live="polite">Abrindo o sinal de áudio da rádio.</p>
-<p class="meta">Transmissão hospedada no Railway • reprodução automática</p>
-<audio id="radio" autoplay playsinline preload="none"></audio>
-<p class="note">A transmissão será iniciada automaticamente quando houver uma fonte de áudio autorizada configurada no servidor. Os cinco vídeos do YouTube ficam como referência da programação; não extraímos nem retransmitimos o áudio deles.</p>
+*{box-sizing:border-box}body{margin:0;min-height:100svh;background:radial-gradient(ellipse at 50% 10%,#38205e,#171025 55%,#0b0812);color:#fff;font-family:system-ui,-apple-system,Segoe UI,sans-serif;display:grid;place-items:center;padding:20px}main{width:min(100%,760px);text-align:center}.brand{font-size:clamp(2.4rem,10vw,4.4rem);font-weight:900;letter-spacing:.12em;margin:0;text-shadow:0 0 28px #b56aff66}.sub{color:#c9b8df;letter-spacing:.16em;text-transform:uppercase;font-size:.78rem;margin:8px 0 24px}.live{display:inline-flex;align-items:center;gap:8px;background:#123c2c;color:#a9ffd0;border:1px solid #267a51;border-radius:99px;padding:7px 14px;font-size:.75rem;font-weight:800;letter-spacing:.12em;margin-bottom:18px}.dot{width:8px;height:8px;border-radius:50%;background:#39e58c;box-shadow:0 0 10px #39e58c}.track{font-weight:700;min-height:24px;margin:12px 0 6px}.status{color:#d7c7e8;min-height:24px;font-size:.9rem;margin:8px 0 14px}.meta,.note{font-size:.75rem;color:#a995bd;line-height:1.5}.player{width:100%;aspect-ratio:16/9;background:#08060d;border-radius:18px;overflow:hidden;box-shadow:0 0 45px #a76ae833}.player iframe{width:100%;height:100%;border:0}.note{max-width:600px;margin:14px auto}
+</style></head><body><main>
+<h1 class="brand">RADIO SHOW</h1><p class="sub">Robinho Show • programação contínua</p>
+<div class="live"><span class="dot"></span> PROGRAMAÇÃO NO RAILWAY</div>
+<div class="player" id="player"></div>
+<p class="track" id="track">Carregando a programação…</p><p class="status" id="status" role="status" aria-live="polite">Conectando ao YouTube.</p>
+<p class="meta">Player oficial do YouTube • cinco vídeos • repetição automática</p>
+<p class="note">O Railway guarda o ponto da programação e calcula o vídeo e o tempo atuais para retomar quando o aplicativo for aberto novamente. A reprodução é feita diretamente pelo YouTube.</p>
 </main>
 <script>
-const API_BASE="https://radio-show-stream-production.up.railway.app";
-const audio=document.getElementById("radio"),statusEl=document.getElementById("status"),trackEl=document.getElementById("track"),disc=document.getElementById("disc");
-async function startRadio(){
+const API="https://radio-show-stream-production.up.railway.app";
+let ids=[],durations=[240,240,240,240,240],player,heartbeat;
+const track=document.getElementById("track"),status=document.getElementById("status");
+async function api(path,options={}){const r=await fetch(API+path,{cache:"no-store",...options});if(!r.ok)throw new Error("Servidor "+r.status);return r.json();}
+async function start(){
  try{
-  const response=await fetch(API_BASE+"/health",{cache:"no-store"});
-  const health=await response.json();
-  if(!health.streamConfigured){
-   trackEl.textContent="Aguardando fonte de áudio";
-   statusEl.textContent="A estrutura da transmissão está pronta, mas falta configurar uma URL de streaming autorizada no servidor.";
-   return;
-  }
-  audio.src=API_BASE+"/stream";
-  audio.load();
-  const result=audio.play();
-  if(result&&typeof result.then==="function")await result;
-  trackEl.textContent="RADIO SHOW • AO VIVO";
-  statusEl.textContent="Conectado à transmissão contínua.";
- }catch(error){
-  trackEl.textContent="Transmissão indisponível";
-  statusEl.textContent="O aparelho ou a fonte de áudio não permitiu iniciar automaticamente: "+error.message;
- }
+  const [list,sync]=await Promise.all([api("/api/playlist"),api("/api/sync")]);
+  ids=list.playlist.map(x=>x.videoId);durations=sync.durations||durations;
+  if(!ids.length)throw new Error("A programação está vazia.");
+  const tag=document.createElement("script");tag.src="https://www.youtube.com/iframe_api";document.head.appendChild(tag);
+  window.onYouTubeIframeAPIReady=()=>createPlayer(sync);
+ }catch(e){track.textContent="Não foi possível carregar";status.textContent=e.message;}
 }
-audio.addEventListener("playing",()=>{disc.classList.add("playing");trackEl.textContent="RADIO SHOW • AO VIVO";statusEl.textContent="Você está ouvindo a transmissão da rádio.";});
-audio.addEventListener("waiting",()=>statusEl.textContent="Conectando ao sinal de áudio…");
-audio.addEventListener("error",()=>{disc.classList.remove("playing");statusEl.textContent="Não foi possível receber o sinal. Verifique a fonte de áudio no servidor.";});
-startRadio();
+function createPlayer(sync){
+ player=new YT.Player("player",{videoId:sync.videoId||ids[0],playerVars:{autoplay:1,controls:1,playsinline:1,rel:0,loop:1,playlist:ids.join(","),start:Math.max(0,sync.currentTime||0),enablejsapi:1},events:{onReady:e=>{e.target.playVideo();status.textContent="Player oficial do YouTube conectado.";heartbeat=setInterval(report,7000);},onStateChange:e=>{if(e.data===YT.PlayerState.PLAYING){track.textContent="Robinho Show • vídeo "+(ids.indexOf(e.target.getVideoData().video_id)+1)+" de "+ids.length;status.textContent="Reprodução ativa pelo YouTube.";report();}if(e.data===YT.PlayerState.ENDED)e.target.nextVideo();},onError:e=>{status.textContent="O YouTube informou erro "+e.data+". Tentando o próximo vídeo.";try{e.target.nextVideo();}catch{}}}});
+}
+async function report(){
+ if(!player||!player.getCurrentTime)return;
+ try{const id=player.getVideoData().video_id,index=ids.indexOf(id);if(index<0)return;
+  const d=player.getDuration();if(d>0)durations[index]=d;
+  await api("/api/sync",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({index,currentTime:player.getCurrentTime(),durations})});
+ }catch(e){status.textContent="Sem conexão com o sincronizador; o YouTube continua no aparelho.";}
+}
+start();
 </script></body></html>
