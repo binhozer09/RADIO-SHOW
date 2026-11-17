@@ -36,5 +36,12 @@ async function report(){
   await api("/api/sync",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({index,currentTime:player.getCurrentTime(),durations})});
  }catch(e){status.textContent="Sem conexão com o sincronizador; o YouTube continua no aparelho.";}
 }
+
+const remotePanel=document.getElementById("remotePanel"),remoteOpen=document.getElementById("remoteOpen"),remoteClose=document.getElementById("remoteClose"),remoteConnect=document.getElementById("remoteConnect"),remotePass=document.getElementById("remotePass"),remoteLogin=document.getElementById("remoteLogin"),remoteView=document.getElementById("remoteView"),remoteHint=document.getElementById("remoteHint");
+remoteOpen.addEventListener("click",async()=>{remotePanel.hidden=false;remoteHint.textContent="Verificando disponibilidade da tela Linux…";try{const r=await api("/api/remote-status");remoteHint.textContent=r.enabled?"Digite a senha de controle do Railway e toque em Conectar.":r.message;}catch(e){remoteHint.textContent="Não foi possível alcançar o Railway: "+e.message;}});
+remoteClose.addEventListener("click",()=>{remotePanel.hidden=true;remoteView.replaceChildren();remoteView.style.display="none";remoteLogin.style.display="flex";remotePass.value="";});
+remoteConnect.addEventListener("click",async()=>{const pass=remotePass.value.trim();if(!pass){remoteHint.textContent="Digite a senha para continuar.";return;}remoteConnect.disabled=true;remoteHint.textContent="Abrindo a sessão Linux…";try{const r=await api("/api/remote-status");if(!r.enabled)throw new Error(r.message);const frame=document.createElement("iframe");frame.title="Tela Linux remota do Railway";frame.allow="autoplay; clipboard-read; clipboard-write";frame.style.cssText="width:100%;height:100%;border:0;background:#000";frame.src=API+"/remote/?token="+encodeURIComponent(pass);remoteView.replaceChildren(frame);remoteLogin.style.display="none";remoteView.style.display="block";remoteHint.textContent="Conectando à tela Linux…";frame.addEventListener("load",()=>{remoteHint.textContent="Sessão aberta. Se a tela não aparecer, confira a senha do Railway.";});}catch(e){remoteHint.textContent=e.message;}finally{remoteConnect.disabled=false;}});
+remotePass.addEventListener("keydown",e=>{if(e.key==="Enter")remoteConnect.click();});
+
 start();
 </script></body></html>
