@@ -37,11 +37,13 @@
   </div>
   <div class="player-wrap"><div class="player" id="player"></div></div>
   <a class="channel" href="https://www.youtube.com/@RobinhoShowOficial" target="_blank" rel="noopener">Canal oficial de Robinho Show ↗</a>
-  <p class="note">A reprodução usa o player oficial do YouTube. Para ativar a sequência automática, é necessário configurar uma playlist pública com as músicas de até 5 minutos.</p>
+  <p class="note">A sequência usa os vídeos do canal oficial e pula automaticamente os que passam de 5 minutos.</p>
 </main>
 <script>
-  // Configure YOUTUBE_PLAYLIST_ID após criar/selecionar a playlist oficial.
-  const YOUTUBE_PLAYLIST_ID = "";
+  // Playlist automática de envios do canal oficial Robinho Show.
+  // O player pula vídeos com mais de 5 minutos.
+  const YOUTUBE_PLAYLIST_ID = "UUcYfAB9N908fAKaVFEFxxQA";
+  const skippedVideos = new Set();
   const statusEl = document.getElementById("status");
   const disc = document.getElementById("disc");
   let player = null;
@@ -60,17 +62,24 @@
   }
   window.onYouTubeIframeAPIReady = function () {
     apiReady = true;
-    if (!YOUTUBE_PLAYLIST_ID) {
-      statusEl.textContent = "Playlist oficial ainda não configurada";
-      return;
-    }
     player = new YT.Player("player", {
       height: "203", width: "360",
       playerVars: { listType: "playlist", list: YOUTUBE_PLAYLIST_ID, playsinline: 1, rel: 0, origin: window.location.origin },
       events: {
         onReady: () => { statusEl.textContent = "Pronto para tocar"; },
         onStateChange: e => {
-          if (e.data === YT.PlayerState.PLAYING) setPlaying(true);
+          if (e.data === YT.PlayerState.PLAYING) {
+            const videoId = player.getVideoData()?.video_id || "";
+            const duration = player.getDuration();
+            if (duration > 300 && !skippedVideos.has(videoId)) {
+              skippedVideos.add(videoId);
+              setPlaying(false);
+              statusEl.textContent = "Pulando vídeo com mais de 5 minutos…";
+              window.setTimeout(() => player && player.nextVideo(), 700);
+              return;
+            }
+            setPlaying(true);
+          }
           else if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED) setPlaying(false);
         },
         onError: e => {
@@ -81,10 +90,6 @@
     });
   };
   document.getElementById("play").addEventListener("click", () => {
-    if (!YOUTUBE_PLAYLIST_ID) {
-      statusEl.textContent = "Falta configurar a playlist de músicas";
-      return;
-    }
     if (!apiReady || !player) {
       loadYouTubeApi();
       statusEl.textContent = "Carregando player…";
