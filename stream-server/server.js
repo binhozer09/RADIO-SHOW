@@ -1,6 +1,7 @@
 "use strict";
 
 const http = require("node:http");
+const https = require("node:https");
 
 const PORT = Number(process.env.PORT || 8000);
 
@@ -40,7 +41,8 @@ const server = http.createServer((req, res) => {
       ok: true,
       service: "RADIO SHOW",
       online: true,
-      playbackMode: "youtube-iframe-on-listener-device",
+      playbackMode: process.env.STREAM_SOURCE_URL ? "authorized-upstream-audio-stream" : "waiting-for-stream-source",
+      streamConfigured: Boolean(process.env.STREAM_SOURCE_URL),
       playlistSize: VIDEO_IDS.length,
       downloadsEnabled: false
     });
@@ -51,8 +53,33 @@ const server = http.createServer((req, res) => {
       stationName: "RADIO SHOW",
       playlist: VIDEO_IDS.map((videoId, index) => ({ videoId, order: index + 1 })),
       repeat: true,
-      playback: "official-youtube-iframe"
+      playback: "reference-playlist",
+      referenceOnly: true
     });
+  }
+
+  if (req.method === "GET" && url.pathname === "/stream") {
+    const source = process.env.STREAM_SOURCE_URL;
+    if (!source) return send(res, 503, { error: "STREAM_SOURCE_URL não configurada. Informe uma fonte de áudio autorizada." });
+    let target;
+    try { target = new URL(source); } catch { return send(res, 500, { error: "URL da fonte de áudio inválida." }); }
+    if (target.protocol !== "https:") return send(res, 400, { error: "A fonte de áudio precisa usar HTTPS." });
+    const upstream = https.get(target, { headers: { "user-agent": "RADIO-SHOW/1.0" } }, (audio) => {
+      if (audio.statusCode < 200 || audio.statusCode >= 300) {
+        res.writeHead(502, { "content-type": "text/plain; charset=utf-8" });
+        return res.end("A fonte de áudio retornou HTTP " + audio.statusCode);
+      }
+      res.writeHead(200, {
+        "content-type": audio.headers["content-type"] || "audio/mpeg",
+        "cache-control": "no-store, no-cache",
+        "access-control-allow-origin": "*",
+        "icy-name": "RADIO SHOW"
+      });
+      audio.pipe(res);
+    });
+    upstream.on("error", (error) => { if (!res.headersSent) res.writeHead(502); res.end("Falha na fonte de áudio: " + error.message); });
+    req.on("close", () => upstream.destroy());
+    return;
   }
 
   // Compatibilidade com clientes antigos: entrega o primeiro item sem exigir metadados.
