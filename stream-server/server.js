@@ -49,28 +49,32 @@ async function fetchEligibleVideos() {
   const channel = await youtube(channelUrl);
   const uploadsId = channel.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
   if (!uploadsId) throw new Error("Não foi possível localizar a playlist de envios do canal @" + CHANNEL_HANDLE + ".");
-  const playlistUrl = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
-  playlistUrl.search = new URLSearchParams({
-    part: "contentDetails,snippet",
-    playlistId: uploadsId,
-    maxResults: "50",
-    key: API_KEY
-  });
-  const playlist = await youtube(playlistUrl);
-  const ids = [...new Set((playlist.items || [])
-    .map(item => item.contentDetails?.videoId)
-    .filter(Boolean))];
-  if (!ids.length) throw new Error("A playlist de envios do canal não retornou vídeos.");
+  const ids = [];
+  let pageToken = "";
+  do {
+    const playlistUrl = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
+    const params = { part: "contentDetails", playlistId: uploadsId, maxResults: "50", key: API_KEY };
+    if (pageToken) params.pageToken = pageToken;
+    playlistUrl.search = new URLSearchParams(params);
+    const playlist = await youtube(playlistUrl);
+    ids.push(...(playlist.items || []).map(item => item.contentDetails?.videoId).filter(Boolean));
+    pageToken = playlist.nextPageToken || "";
+  } while (pageToken && ids.length < 200);
+  const uniqueIds = [...new Set(ids)].slice(0, 200);
+  if (!uniqueIds.length) throw new Error("A playlist de envios do canal não retornou vídeos.");
 
-  const videosUrl = new URL("https://www.googleapis.com/youtube/v3/videos");
-  videosUrl.search = new URLSearchParams({
-    part: "contentDetails,status,snippet",
-    id: ids.join(","),
-    key: API_KEY
-  });
-  const details = await youtube(videosUrl);
-  const byId = new Map((details.items || []).map(item => [item.id, item]));
-  const eligible = ids.map(id => byId.get(id)).filter(video => {
+  const byId = new Map();
+  for (let i = 0; i < uniqueIds.length; i += 50) {
+    const videosUrl = new URL("https://www.googleapis.com/youtube/v3/videos");
+    videosUrl.search = new URLSearchParams({
+      part: "contentDetails,status,snippet",
+      id: uniqueIds.slice(i, i + 50).join(","),
+      key: API_KEY
+    });
+    const details = await youtube(videosUrl);
+    for (const video of (details.items || [])) byId.set(video.id, video);
+  }
+  const eligible = uniqueIds.map(id => byId.get(id)).filter(video => {
     if (!video || video.status?.embeddable === false || video.status?.privacyStatus === "private") return false;
     const seconds = durationSeconds(video.contentDetails?.duration);
     return seconds > 0 && seconds <= MAX_DURATION_SECONDS;
@@ -79,7 +83,7 @@ async function fetchEligibleVideos() {
     title: video.snippet?.title || "Robinho Show",
     durationSeconds: durationSeconds(video.contentDetails.duration)
   }));
-  if (!eligible.length) throw new Error("Nenhum vídeo público incorporável de até " + MAX_DURATION_SECONDS + " segundos foi encontrado entre os 50 envios mais recentes.");
+  if (!eligible.length) throw new Error("Nenhum vídeo público incorporável de até " + MAX_DURATION_SECONDS + " segundos foi encontrado entre os 200 envios mais recentes.");
   return eligible;
 }
 
