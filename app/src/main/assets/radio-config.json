@@ -4,6 +4,13 @@
   "youtubeLiveUrl": "https://www.youtube.com/@robinhoshowoficial",
   "syncApiUrl": "https://radio-show-stream-production.up.railway.app/api/now-playing",
   "maxVideoDurationSeconds": 300,
+  "playlist": [
+    "bWO1FNUTIao",
+    "rBhKH-pTYGQ",
+    "WffuNC-EjzY",
+    "0YF7iz9Z-4k",
+    "zyvCntqPnjE"
+  ],
   "playback": "official-youtube-iframe-api",
   "downloadsEnabled": false
 }
