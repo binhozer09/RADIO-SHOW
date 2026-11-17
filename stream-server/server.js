@@ -1,4 +1,5 @@
 "use strict";
+// Remote-only build: all radio playback and playlist endpoints have been removed.
 const http=require("node:http"),fs=require("node:fs"),path=require("node:path"),crypto=require("node:crypto"),{spawn,execFileSync}=require("node:child_process");
 const PORT=Number(process.env.PORT||8000),PASSWORD=process.env.REMOTE_CONTROL_PASSWORD||"",NOVNC="/usr/share/novnc",TTL=12*60*60*1000,sessions=new Map();
 function json(res,status,data){res.writeHead(status,{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"});res.end(JSON.stringify(data));}
