@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#100b20">
-  <meta name="description" content="RADIO SHOW — música de Robinho Show.">
+  <meta name="description" content="RADIO SHOW — transmissão independente 24 horas pela nuvem.">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <title>RADIO SHOW</title>
@@ -20,9 +20,8 @@
     .status{min-height:24px;color:#d7c7e8;font-size:.92rem;margin:0 0 24px}
     .controls{display:flex;justify-content:center;gap:14px}.control{border:0;border-radius:999px;padding:16px 30px;min-width:132px;font-weight:800;letter-spacing:.12em;font-size:1rem;cursor:pointer}
     #play{background:linear-gradient(135deg,#d9a6ff,#9747e8);color:#190c28;box-shadow:0 8px 28px #a34dff55}#pause{background:#2b203a;color:#eee;border:1px solid #61477c}
-    .player-wrap{width:min(100%,360px);margin:24px auto 0}.player{width:100%;min-height:200px;aspect-ratio:16/9;border:1px solid #61477c;border-radius:14px;overflow:hidden;background:#08060d}.player iframe{width:100%;height:100%;min-height:200px}.channel{display:inline-block;margin-top:22px;color:#bca4d8;font-size:.85rem;text-decoration:none}
-    .note{font-size:.74rem;line-height:1.5;color:#8f7da7;margin:22px auto 0;max-width:330px}
-    button:focus-visible,a:focus-visible{outline:3px solid #e4c4ff;outline-offset:4px}
+    .cloud{margin:28px auto 0;color:#c9b8df;font-size:.85rem;letter-spacing:.08em}.note{font-size:.74rem;line-height:1.5;color:#8f7da7;margin:14px auto 0;max-width:330px}
+    button:focus-visible{outline:3px solid #e4c4ff;outline-offset:4px}
   </style>
 </head>
 <body>
@@ -30,77 +29,74 @@
   <h1 class="brand">RADIO SHOW</h1>
   <p class="sub">A sua música, sempre com você</p>
   <div class="disc-wrap"><div class="disc" id="disc" aria-hidden="true"></div></div>
-  <p class="status" id="status" role="status">Pronto para tocar</p>
+  <p class="status" id="status" role="status" aria-live="polite">Conectando à rádio…</p>
   <div class="controls">
     <button class="control" id="play" type="button">▶ PLAY</button>
     <button class="control" id="pause" type="button">Ⅱ PAUSE</button>
   </div>
-  <div class="player-wrap"><div class="player" id="player"></div></div>
-  <a class="channel" href="https://www.youtube.com/@RobinhoShowOficial" target="_blank" rel="noopener">Canal oficial de Robinho Show ↗</a>
-  <p class="note">A sequência usa os vídeos do canal oficial e pula automaticamente os que passam de 5 minutos.</p>
+  <p class="cloud">☁ TRANSMISSÃO INDEPENDENTE NA NUVEM</p>
+  <p class="note">A emissora continua transmitindo mesmo quando o seu celular está desligado. Para ouvir, o aparelho precisa de internet.</p>
+  <audio id="radioAudio" preload="none" playsinline></audio>
 </main>
 <script>
-  // Playlist automática de envios do canal oficial Robinho Show.
-  // O player pula vídeos com mais de 5 minutos.
-  const YOUTUBE_PLAYLIST_ID = "UUcYfAB9N908fAKaVFEFxxQA";
-  const skippedVideos = new Set();
   const statusEl = document.getElementById("status");
   const disc = document.getElementById("disc");
-  let player = null;
-  let apiReady = false;
+  const audio = document.getElementById("radioAudio");
+  let streamUrl = "";
+  let configLoaded = false;
+
   function setPlaying(on) {
     disc.classList.toggle("playing", on);
-    statusEl.textContent = on ? "Reproduzindo" : "Pausado";
+    if (on) statusEl.textContent = "Ao vivo — RADIO SHOW";
   }
-  function loadYouTubeApi() {
-    if (document.getElementById("yt-api")) return;
-    const script = document.createElement("script");
-    script.id = "yt-api";
-    script.src = "https://www.youtube.com/iframe_api";
-    script.onerror = () => { statusEl.textContent = "Não foi possível conectar ao player do YouTube."; };
-    document.head.appendChild(script);
+
+  async function loadConfig() {
+    try {
+      const response = await fetch("./radio-config.json", { cache: "no-store" });
+      if (!response.ok) throw new Error("Configuração não encontrada");
+      const config = await response.json();
+      streamUrl = typeof config.streamUrl === "string" ? config.streamUrl.trim() : "";
+      configLoaded = true;
+      statusEl.textContent = streamUrl ? "Pronto para conectar à rádio" : "Servidor da rádio aguardando configuração";
+    } catch (_) {
+      configLoaded = true;
+      statusEl.textContent = "Não foi possível carregar a configuração da rádio";
+    }
   }
-  window.onYouTubeIframeAPIReady = function () {
-    apiReady = true;
-    player = new YT.Player("player", {
-      height: "203", width: "360",
-      playerVars: { listType: "playlist", list: YOUTUBE_PLAYLIST_ID, playsinline: 1, rel: 0, origin: window.location.origin },
-      events: {
-        onReady: () => { statusEl.textContent = "Pronto para tocar"; },
-        onStateChange: e => {
-          if (e.data === YT.PlayerState.PLAYING) {
-            const videoId = player.getVideoData()?.video_id || "";
-            const duration = player.getDuration();
-            if (duration > 300 && !skippedVideos.has(videoId)) {
-              skippedVideos.add(videoId);
-              setPlaying(false);
-              statusEl.textContent = "Pulando vídeo com mais de 5 minutos…";
-              window.setTimeout(() => player && player.nextVideo(), 700);
-              return;
-            }
-            setPlaying(true);
-          }
-          else if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED) setPlaying(false);
-        },
-        onError: e => {
-          setPlaying(false);
-          statusEl.textContent = "O YouTube não conseguiu carregar esta playlist (erro " + e.data + ").";
-        }
-      }
-    });
-  };
-  document.getElementById("play").addEventListener("click", () => {
-    if (!apiReady || !player) {
-      loadYouTubeApi();
-      statusEl.textContent = "Carregando player…";
+
+  document.getElementById("play").addEventListener("click", async () => {
+    if (!configLoaded) {
+      statusEl.textContent = "Carregando configuração… tente novamente em instantes";
       return;
     }
-    player.playVideo();
+    if (!streamUrl) {
+      statusEl.textContent = "A transmissão na nuvem ainda não foi ativada";
+      return;
+    }
+    if (audio.src !== streamUrl) audio.src = streamUrl;
+    try {
+      await audio.play();
+      setPlaying(true);
+    } catch (_) {
+      statusEl.textContent = "Toque em PLAY novamente para iniciar a transmissão";
+    }
   });
+
   document.getElementById("pause").addEventListener("click", () => {
-    if (player) player.pauseVideo();
+    audio.pause();
     setPlaying(false);
+    statusEl.textContent = "Pausado";
   });
+
+  audio.addEventListener("playing", () => setPlaying(true));
+  audio.addEventListener("pause", () => disc.classList.remove("playing"));
+  audio.addEventListener("waiting", () => { statusEl.textContent = "Conectando ao sinal da rádio…"; });
+  audio.addEventListener("error", () => {
+    disc.classList.remove("playing");
+    statusEl.textContent = "Sinal indisponível. Tente novamente mais tarde.";
+  });
+
+  loadConfig();
   if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
 </script>
 </body>
