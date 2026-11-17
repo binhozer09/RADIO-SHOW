@@ -1,0 +1,12 @@
+{
+  "name": "RADIO SHOW",
+  "short_name": "RADIO SHOW",
+  "description": "Rádio oficial de Robinho Show",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#100b20",
+  "theme_color": "#100b20",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
